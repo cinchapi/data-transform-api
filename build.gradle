@@ -1,0 +1,132 @@
+plugins {
+    id 'java'
+    id 'eclipse'
+    id 'maven'
+    id 'signing'
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '3.0'
+}
+
+// The project version is controlled externally by the "version.sh" script.
+def getVersion = { ->
+    def stdout = new ByteArrayOutputStream()
+    exec {
+        commandLine 'bash', 'version.sh'
+        standardOutput = stdout
+    }
+    return stdout.toString().trim()
+}
+
+group = 'com.cinchapi'
+version  = getVersion()
+// Drop the build component from version number and use that for
+// publishing
+ext.mavenVersion = version.split('\\.')
+ext.mavenVersion[3] = ext.mavenVersion[3].replaceAll("[0-9]+-", "-")
+ext.mavenVersion[3] = ext.mavenVersion[3].replaceAll("[0-9]+", "").trim()
+ext.mavenVersion = ext.mavenVersion.join(".").replace(".-", "-").replaceAll('\\.$', "")
+
+jar {
+    manifest {
+        attributes("Specificiation-Title": "Bucket", "Specificiation-Version": version, "Implementation-Version": version)
+    }
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+	classifier = 'sources'
+	from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+	classifier = 'javadoc'
+	from javadoc.destinationDir
+}
+
+artifacts {
+	archives sourcesJar
+	archives javadocJar
+}
+
+// Set the version for all Concourse dependencies
+ext.concourseVersion = '0.7.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+    maven {
+        url 'https://oss.sonatype.org/content/repositories/snapshots/'
+    }
+    maven {
+        url  'http://cinchapi.bintray.com/maven'
+    }
+    maven {
+        url  'http://cinchapi.bintray.com/maven-snapshots'
+    }
+    maven {
+        url  "http://dl.bintray.com/steppschuh/Markdown-Generator"
+    }
+}
+
+dependencies {
+    compile group: 'com.cinchapi', name: 'accent4j', version: '1.0.0-SNAPSHOT', changing:true
+    compile group: 'com.cinchapi', name: 'concourse-driver-java', version: concourseVersion, changing:true // needed for util classes...
+    compile group: 'com.google.code.findbugs', name: 'jsr305', version:'2.0.1'
+    compile group: 'com.google.guava', name:'guava', version:'21.0'
+    testCompile 'junit:junit:4.11'
+}
+
+test {
+    testLogging {
+        showStandardStreams = true
+    }
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+            // Drop the build component from version number and use that in the
+            // POM file
+            def _version = project.version.split('\\.')
+            _version[3] = _version[3].replaceAll("[0-9]+-", "-")
+            _version[3] = _version[3].replaceAll("[0-9]+", "").trim()
+            _version = _version.join(".").replace(".-", "-").replaceAll('\\.$', "")
+            pom.version = _version
+
+            pom.project {
+               name 'Data Transform API'
+               packaging 'jar'
+               description 'A common API for data transformation.'
+               url 'http://cinchapi.com'
+
+               scm {
+                   url 'git@github.com:cinchapi/data-transform-api.git'
+                   connection 'git@github.com:cinchapi/data-transform-api.git'
+                   developerConnection 'git@github.com:cinchapi/data-transform-api.git'
+               }
+
+               licenses {
+                   license {
+                       name 'The Apache License'
+                       url 'http://opensource.org/licenses/Apache-2.0'
+                       distribution 'repo'
+                   }
+               }
+
+               developers {
+                   developer {
+                       id 'jnelson'
+                       name 'Jeff Nelson'
+                   }
+               }
+           }
+
+           def mavenUrl = pom.version.matches('^[0-9]+\\.[0-9]+\\.[0-9]+(-rc[0-9]+){0,1}$') ? 'https://oss.sonatype.org/service/local/staging/deploy/maven2' : 'https://oss.sonatype.org/content/repositories/snapshots'
+           repository(url: mavenUrl) {
+               authentication(userName: sonatypeUsername, password: sonatypePassword)
+           }
+        }
+    }
+}
