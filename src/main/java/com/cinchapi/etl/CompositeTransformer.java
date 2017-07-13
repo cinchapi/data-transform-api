@@ -54,8 +54,9 @@ class CompositeTransformer implements Transformer {
     public Entry<String, Object> transform(String key, String value) {
         Entry<String, Object> transformed = null;
         for (Transformer transformer : transformers) {
-            transformed = transformer.transform(key, value);
-            if(transformed != null) {
+            Entry<String, Object> current = transformer.transform(key, value);
+            if(current != null) {
+                transformed = current;
                 key = transformed.getKey();
                 value = transformed.getValue().toString();
             }
