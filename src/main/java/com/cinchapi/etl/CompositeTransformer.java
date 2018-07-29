@@ -21,6 +21,7 @@ import java.util.Map.Entry;
 import javax.annotation.Nullable;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
 /**
  * A {@link Transformer} that is composed of other {@link Transformer
@@ -46,19 +47,19 @@ class CompositeTransformer implements Transformer {
      */
     public CompositeTransformer(List<Transformer> transformers) {
         Preconditions.checkArgument(!transformers.isEmpty());
-        this.transformers = transformers;
+        this.transformers = ImmutableList.copyOf(transformers);
     }
 
     @Override
     @Nullable
-    public Entry<String, Object> transform(String key, String value) {
+    public Entry<String, Object> transform(String key, Object value) {
         Entry<String, Object> transformed = null;
         for (Transformer transformer : transformers) {
             Entry<String, Object> current = transformer.transform(key, value);
             if(current != null) {
                 transformed = current;
                 key = transformed.getKey();
-                value = transformed.getValue().toString();
+                value = transformed.getValue();
             }
         }
         return transformed;

@@ -130,8 +130,10 @@ public final class Transformers {
             if(Strings.isWithinQuotes(key)) {
                 key = key.substring(1, key.length() - 1);
             }
-            if(Strings.isWithinQuotes(value)) {
-                value = value.substring(1, value.length() - 1);
+            if(value instanceof String
+                    && Strings.isWithinQuotes((String) value)) {
+                String str = (String) value;
+                value = str.substring(1, str.length() - 1);
             }
             return new SimpleEntry<>(key, value);
         };

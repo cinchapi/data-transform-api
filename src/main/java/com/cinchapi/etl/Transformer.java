@@ -43,22 +43,35 @@ public interface Transformer {
     /**
      * Potentially transform one or both of the {@code key}/{@code value} pair.
      * If no transformation should occur, it is acceptable to return
-     * {@code null} to inform the caller that the import values are acceptable
-     * in their passed in state.
-     * Otherwise, the preferred pair should be wrapped in an {@link Entry}
-     * object.
+     * {@code null} to inform the caller that the pair is acceptable in its
+     * provided in state. Otherwise, the preferred pair should be wrapped in an
+     * {@link Entry} object.
      * 
      * @param key the raw key to potentially transform
-     * @param value the raw value to potentially transform; in which case, it is
-     *            acceptable to return any kind of object, but it is recommended
-     *            to return an encoded String (i.e. don't return a
-     *            {@link com.cinchapi.concourse.Link} object, but return a
-     *            string that encodes a link (@record@) instead)
+     * @param value the raw value to potentially transform
      * @return a {@link Entry} object that contains the transformed
      *         {@code key}/{@code value} pair or {@code null} if no
      *         transformation occurred
      */
     @Nullable
-    public Entry<String, Object> transform(String key, String value);
+    public default Entry<String, Object> transform(String key, String value) {
+        return transform(key, (Object) value);
+    }
+
+    /**
+     * Potentially transform one or both of the {@code key}/{@code value} pair.
+     * If no transformation should occur, it is acceptable to return
+     * {@code null} to inform the caller that the pair is acceptable in its
+     * provided in state. Otherwise, the preferred pair should be wrapped in an
+     * {@link Entry} object.
+     * 
+     * @param key the raw key to potentially transform
+     * @param value the raw value to potentially transform
+     * @return a {@link Entry} object that contains the transformed
+     *         {@code key}/{@code value} pair or {@code null} if no
+     *         transformation occurred
+     */
+    @Nullable
+    public Entry<String, Object> transform(String key, Object value);
 
 }
