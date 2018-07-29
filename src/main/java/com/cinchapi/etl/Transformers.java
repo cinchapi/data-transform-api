@@ -31,6 +31,16 @@ import com.google.common.base.CaseFormat;
 public final class Transformers {
 
     /**
+     * Return a {@link Transformer} that does not perform any key or value
+     * transformations.
+     * 
+     * @return a no-op {@link Transformer}
+     */
+    public static Transformer noOp() {
+        return (key, value) -> null;
+    }
+
+    /**
      * Return a {@link CompositeTransformer} that invokes each of the
      * {@code transformers} in order.
      * 
