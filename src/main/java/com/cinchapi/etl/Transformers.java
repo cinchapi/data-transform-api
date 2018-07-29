@@ -31,6 +31,16 @@ import com.google.common.base.CaseFormat;
 public final class Transformers {
 
     /**
+     * Return a {@link Transformer} that does not perform any key or value
+     * transformations.
+     * 
+     * @return a no-op {@link Transformer}
+     */
+    public static Transformer noOp() {
+        return (key, value) -> null;
+    }
+
+    /**
      * Return a {@link CompositeTransformer} that invokes each of the
      * {@code transformers} in order.
      * 
@@ -130,8 +140,10 @@ public final class Transformers {
             if(Strings.isWithinQuotes(key)) {
                 key = key.substring(1, key.length() - 1);
             }
-            if(Strings.isWithinQuotes(value)) {
-                value = value.substring(1, value.length() - 1);
+            if(value instanceof String
+                    && Strings.isWithinQuotes((String) value)) {
+                String str = (String) value;
+                value = str.substring(1, str.length() - 1);
             }
             return new SimpleEntry<>(key, value);
         };
