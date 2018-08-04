@@ -89,13 +89,6 @@ public final class Transformers {
     /**
      * Return a {@link Transformer} that strips invalid characters from the key.
      * Some of those characters are replaced with valid stand-ins.
-     * <h1>Replacements</h1>
-     * <ul>
-     * <li>a white space character (e.g. ' ') is replaced with an
-     * underscore</li>
-     * <li>the pound sign is replaced the string {@code num}</li>
-     * </ul>
-     * <p>
      * 
      * @return the {@link Transformer}
      */
@@ -185,6 +178,12 @@ public final class Transformers {
         };
     }
 
+    /**
+     * Transform a string value to the proper java type using
+     * {@link Convert#stringToJava(String)}.
+     * 
+     * @return the transformer
+     */
     public static Transformer valueStringToJava() {
         return (key, value) -> {
             if(value instanceof String) {
