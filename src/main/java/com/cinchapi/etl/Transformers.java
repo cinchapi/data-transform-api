@@ -17,9 +17,11 @@ package com.cinchapi.etl;
 
 import java.util.Arrays;
 import java.util.Map;
-import java.util.AbstractMap.SimpleEntry;
 
 import com.cinchapi.common.base.validate.Check;
+import com.cinchapi.concourse.util.Convert;
+import com.cinchapi.concourse.util.SplitOption;
+import com.cinchapi.concourse.util.StringSplitter;
 import com.cinchapi.concourse.util.Strings;
 import com.google.common.base.CaseFormat;
 
@@ -29,16 +31,6 @@ import com.google.common.base.CaseFormat;
  * @author Jeff Nelson
  */
 public final class Transformers {
-
-    /**
-     * Return a {@link Transformer} that does not perform any key or value
-     * transformations.
-     * 
-     * @return a no-op {@link Transformer}
-     */
-    public static Transformer noOp() {
-        return (key, value) -> null;
-    }
 
     /**
      * Return a {@link CompositeTransformer} that invokes each of the
@@ -62,7 +54,7 @@ public final class Transformers {
     public static Transformer keyCaseFormat(CaseFormat from, CaseFormat to) {
         return (key, value) -> {
             key = from.to(to, key);
-            return new SimpleEntry<>(key, value);
+            return Transformations.singleKeyValuePair(key, value);
         };
     }
 
@@ -87,7 +79,9 @@ public final class Transformers {
                     modified = true;
                 }
             }
-            return modified ? new SimpleEntry<>(new String(chars), value)
+            return modified
+                    ? Transformations.singleKeyValuePair(new String(chars),
+                            value)
                     : null;
         };
     }
@@ -117,7 +111,9 @@ public final class Transformers {
                     modified = true;
                 }
             }
-            return modified ? new SimpleEntry<>(sb.toString(), value) : null;
+            return modified
+                    ? Transformations.singleKeyValuePair(sb.toString(), value)
+                    : null;
         };
     }
 
@@ -128,24 +124,78 @@ public final class Transformers {
      * @return the {@link Transformer}
      */
     public static Transformer keyToLowerCase() {
-        return (key, value) -> new SimpleEntry<>(key.toLowerCase(), value);
+        return (key, value) -> Transformations
+                .singleKeyValuePair(key.toLowerCase(), value);
     }
 
     /**
      * Return a {@link Transformer} that will strip single and double quotes
      * from the beginning and end of both the key and value.
      */
-    public static Transformer stripQuotes() {
+    public static Transformer keyValueStripQuotes() {
         return (key, value) -> {
+            boolean modified = false;
             if(Strings.isWithinQuotes(key)) {
                 key = key.substring(1, key.length() - 1);
+                modified = true;
             }
             if(value instanceof String
                     && Strings.isWithinQuotes((String) value)) {
                 String str = (String) value;
                 value = str.substring(1, str.length() - 1);
+                modified = true;
             }
-            return new SimpleEntry<>(key, value);
+            return modified ? Transformations.singleKeyValuePair(key, value)
+                    : null;
+        };
+    }
+
+    /**
+     * Return a {@link Transformer} that does not perform any key or value
+     * transformations.
+     * 
+     * @return a no-op {@link Transformer}
+     */
+    public static Transformer noOp() {
+        return (key, value) -> null;
+    }
+
+    /**
+     * Return a {@link Transformer} that splits a String value into multiple
+     * strings that are all mapped from the original key.
+     * 
+     * @param delimiter the character on which to split the String
+     * @param options the optional {@link SplitOption SplitOptions}
+     * @return the transformer
+     */
+    public static Transformer valueSplitOnDelimiter(char delimiter,
+            SplitOption... options) {
+        return (key, value) -> {
+            if(value instanceof String) {
+                StringSplitter splitter = new StringSplitter((String) value,
+                        delimiter, options);
+                Object[] values = splitter.toArray();
+                return values.length > 1
+                        ? Transformations.singleKeyToMultiValues(key, values)
+                        : null;
+            }
+            else {
+                return null;
+            }
+        };
+    }
+
+    public static Transformer valueStringToJava() {
+        return (key, value) -> {
+            if(value instanceof String) {
+                Object converted = Convert.stringToJava((String) value);
+                return !converted.equals(value)
+                        ? Transformations.singleKeyValuePair(key, converted)
+                        : null;
+            }
+            else {
+                return null;
+            }
         };
     }
 

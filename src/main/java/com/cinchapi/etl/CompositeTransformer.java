@@ -15,13 +15,16 @@
  */
 package com.cinchapi.etl;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
-
 import javax.annotation.Nullable;
 
+import com.cinchapi.common.collect.Collections;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
 
 /**
  * A {@link Transformer} that is composed of other {@link Transformer
@@ -52,17 +55,76 @@ class CompositeTransformer implements Transformer {
 
     @Override
     @Nullable
-    public Entry<String, Object> transform(String key, Object value) {
-        Entry<String, Object> transformed = null;
+    public Map<String, Collection<Object>> transform(String key, Object value) {
+        Map<String, Collection<Object>> transformed = null;
         for (Transformer transformer : transformers) {
-            Entry<String, Object> current = transformer.transform(key, value);
-            if(current != null) {
-                transformed = current;
-                key = transformed.getKey();
-                value = transformed.getValue();
+            Map<String, Collection<Object>> next = null;
+            if(transformed == null) {
+                // Either this is the first attempt to transform key/value or
+                // all other previous attempts have declined to do so.
+                next = transformer.transform(key, value);
+            }
+            else {
+                // The original key/value, at some point, has been transformed
+                // so we must go through the entire map and apply the
+                // transformer in order to get the #next state.
+                next = transformEach(transformer, transformed, null);
+            }
+            if(next != null) {
+                // NOTE: We replace #transformed with #next (instead of
+                // merging) because the composition is supposed to be a
+                // successive operation instead of a cumulative one.
+                transformed = next;
             }
         }
         return transformed;
+    }
+
+    /**
+     * Apply the {@code transformer} to each key/value mapping within the
+     * {@code object}. While doing so, use the {@code current} transformation
+     * mapping as a merge source.
+     * 
+     * @param transformer
+     * @param object
+     * @param next an optional collection that tracks the future state of the
+     *            {@code object} after applying the {@code transformer} to each
+     *            key/value mapping
+     * @return the transformed object after applying the {@code transformer} and
+     *         merging with the {@code current}
+     */
+    private Map<String, Collection<Object>> transformEach(
+            Transformer transformer, Map<String, Collection<Object>> object,
+            @Nullable Map<String, Collection<Object>> next) {
+        for (Entry<String, Collection<Object>> entry : object.entrySet()) {
+            String key = entry.getKey();
+            Collection<Object> values = entry.getValue();
+            for (Object value : values) {
+                Map<String, Collection<Object>> transformed = transformer
+                        .transform(key, value);
+                if(next == null && transformed != null) {
+                    // The current key/value pair resulted in a non-null
+                    // transformation, so we have to go back and re-transform
+                    // the entire object to preserve all the non-transformed
+                    // data alongside the result of transforming the current
+                    // key/value pair.
+                    return transformEach(transformer, object,
+                            Maps.newLinkedHashMap());
+                }
+                else if(next != null && transformed == null) {
+                    next.merge(key, ImmutableList.of(value),
+                            Collections::concat);
+                }
+                else if(next != null && transformed != null) {
+                    for (Entry<String, Collection<Object>> tentry : transformed
+                            .entrySet()) {
+                        next.merge(tentry.getKey(), tentry.getValue(),
+                                Collections::concat);
+                    }
+                }
+            }
+        }
+        return next;
     }
 
 }

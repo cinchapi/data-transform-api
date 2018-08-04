@@ -15,7 +15,8 @@
  */
 package com.cinchapi.etl;
 
-import java.util.Map.Entry;
+import java.util.Collection;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -41,37 +42,78 @@ import javax.annotation.Nullable;
 public interface Transformer {
 
     /**
-     * Potentially transform one or both of the {@code key}/{@code value} pair.
-     * If no transformation should occur, it is acceptable to return
-     * {@code null} to inform the caller that the pair is acceptable in its
-     * provided in state. Otherwise, the preferred pair should be wrapped in an
-     * {@link Entry} object.
+     * Potentially transform the provided {@code key} and {@code value} pair.
+     * <p>
+     * There are four possible transformation scenarios:
+     * <ol>
+     * <li>Neither the key or value changes</li>
+     * <li>Only the key changes</li>
+     * <li>Only the value changes</li>
+     * <li>Both the key and value change</li>
+     * </ol>
+     * In scenario 1, this method returns {@code null}. In the other scenarios,
+     * this method returns a {@link Map mapping from key to a collection of
+     * objects} which contains the data that will <em>replace</em> the input
+     * data.
+     * </p>
+     * <p>
+     * Even though the inputs to this method are simple, a {@link Map} is
+     * returned to allow for complex transformations. For example,
+     * <ul>
+     * <li>You can transform a single value into multiple values by including
+     * multiple objects in the associated values collection.</li>
+     * <li>You can transform a single key/value pair into multiple key/value
+     * pairs by including multiple keys in the returned map</li>
+     * </ul>
+     * For the basic case of transforming a single key/value pair into another
+     * single key/value pair, you should use the
+     * {@link Transformations#singleKeyValuePair(String, Object)} utility.
+     * </p>
      * 
      * @param key the raw key to potentially transform
      * @param value the raw value to potentially transform
-     * @return a {@link Entry} object that contains the transformed
-     *         {@code key}/{@code value} pair or {@code null} if no
-     *         transformation occurred
+     * @return a transformation map
      */
     @Nullable
-    public default Entry<String, Object> transform(String key, String value) {
+    public default Map<String, Collection<Object>> transform(String key,
+            String value) {
         return transform(key, (Object) value);
     }
 
     /**
-     * Potentially transform one or both of the {@code key}/{@code value} pair.
-     * If no transformation should occur, it is acceptable to return
-     * {@code null} to inform the caller that the pair is acceptable in its
-     * provided in state. Otherwise, the preferred pair should be wrapped in an
-     * {@link Entry} object.
+     * Potentially transform the provided {@code key} and {@code value} pair.
+     * <p>
+     * There are four possible transformation scenarios:
+     * <ol>
+     * <li>Neither the key or value changes</li>
+     * <li>Only the key changes</li>
+     * <li>Only the value changes</li>
+     * <li>Both the key and value change</li>
+     * </ol>
+     * In scenario 1, this method returns {@code null}. In the other scenarios,
+     * this method returns a {@link Map mapping from key to a collection of
+     * objects} which contains the data that will <em>replace</em> the input
+     * data.
+     * </p>
+     * <p>
+     * Even though the inputs to this method are simple, a {@link Map} is
+     * returned to allow for complex transformations. For example,
+     * <ul>
+     * <li>You can transform a single value into multiple values by including
+     * multiple objects in the associated values collection.</li>
+     * <li>You can transform a single key/value pair into multiple key/value
+     * pairs by including multiple keys in the returned map</li>
+     * </ul>
+     * For the basic case of transforming a single key/value pair into another
+     * single key/value pair, you should use the
+     * {@link Transformations#singleKeyValuePair(String, Object)} utility.
+     * </p>
      * 
      * @param key the raw key to potentially transform
      * @param value the raw value to potentially transform
-     * @return a {@link Entry} object that contains the transformed
-     *         {@code key}/{@code value} pair or {@code null} if no
-     *         transformation occurred
+     * @return a transformation map
      */
     @Nullable
-    public Entry<String, Object> transform(String key, Object value);
+    public Map<String, Collection<Object>> transform(String key, Object value);
 
 }
