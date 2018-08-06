@@ -38,6 +38,53 @@ import com.google.common.collect.Maps;
 class CompositeTransformer implements Transformer {
 
     /**
+     * Apply the {@code transformer} to each key/value mapping within the
+     * {@code object}. While doing so, use the {@code current} transformation
+     * mapping as a merge source.
+     * 
+     * @param transformer
+     * @param object
+     * @param next an optional collection that tracks the future state of the
+     *            {@code object} after applying the {@code transformer} to each
+     *            key/value mapping
+     * @return the transformed object after applying the {@code transformer} and
+     *         merging with the {@code current}
+     */
+    private static Map<String, Collection<Object>> transformAndMerge(
+            Transformer transformer, Map<String, Collection<Object>> object,
+            @Nullable Map<String, Collection<Object>> next) {
+        for (Entry<String, Collection<Object>> entry : object.entrySet()) {
+            String key = entry.getKey();
+            Collection<Object> values = entry.getValue();
+            for (Object value : values) {
+                Map<String, Collection<Object>> transformed = transformer
+                        .transform(key, value);
+                if(next == null && transformed != null) {
+                    // The current key/value pair resulted in a non-null
+                    // transformation, so we have to go back and re-transform
+                    // the entire object to preserve all the non-transformed
+                    // data alongside the result of transforming the current
+                    // key/value pair.
+                    return transformAndMerge(transformer, object,
+                            Maps.newLinkedHashMap());
+                }
+                else if(next != null && transformed == null) {
+                    next.merge(key, ImmutableList.of(value),
+                            Collections::concat);
+                }
+                else if(next != null && transformed != null) {
+                    for (Entry<String, Collection<Object>> tentry : transformed
+                            .entrySet()) {
+                        next.merge(tentry.getKey(), tentry.getValue(),
+                                Collections::concat);
+                    }
+                }
+            }
+        }
+        return next;
+    }
+
+    /**
      * An ordered list of the {@link Transformer transformers} that are applied
      * in the composite {@link #transform(String, String)} method
      */
@@ -68,7 +115,7 @@ class CompositeTransformer implements Transformer {
                 // The original key/value, at some point, has been transformed
                 // so we must go through the entire map and apply the
                 // transformer in order to get the #next state.
-                next = transformEach(transformer, transformed, null);
+                next = transformAndMerge(transformer, transformed, null);
             }
             if(next != null) {
                 // NOTE: We replace #transformed with #next (instead of
@@ -78,53 +125,6 @@ class CompositeTransformer implements Transformer {
             }
         }
         return transformed;
-    }
-
-    /**
-     * Apply the {@code transformer} to each key/value mapping within the
-     * {@code object}. While doing so, use the {@code current} transformation
-     * mapping as a merge source.
-     * 
-     * @param transformer
-     * @param object
-     * @param next an optional collection that tracks the future state of the
-     *            {@code object} after applying the {@code transformer} to each
-     *            key/value mapping
-     * @return the transformed object after applying the {@code transformer} and
-     *         merging with the {@code current}
-     */
-    private Map<String, Collection<Object>> transformEach(
-            Transformer transformer, Map<String, Collection<Object>> object,
-            @Nullable Map<String, Collection<Object>> next) {
-        for (Entry<String, Collection<Object>> entry : object.entrySet()) {
-            String key = entry.getKey();
-            Collection<Object> values = entry.getValue();
-            for (Object value : values) {
-                Map<String, Collection<Object>> transformed = transformer
-                        .transform(key, value);
-                if(next == null && transformed != null) {
-                    // The current key/value pair resulted in a non-null
-                    // transformation, so we have to go back and re-transform
-                    // the entire object to preserve all the non-transformed
-                    // data alongside the result of transforming the current
-                    // key/value pair.
-                    return transformEach(transformer, object,
-                            Maps.newLinkedHashMap());
-                }
-                else if(next != null && transformed == null) {
-                    next.merge(key, ImmutableList.of(value),
-                            Collections::concat);
-                }
-                else if(next != null && transformed != null) {
-                    for (Entry<String, Collection<Object>> tentry : transformed
-                            .entrySet()) {
-                        next.merge(tentry.getKey(), tentry.getValue(),
-                                Collections::concat);
-                    }
-                }
-            }
-        }
-        return next;
     }
 
 }
