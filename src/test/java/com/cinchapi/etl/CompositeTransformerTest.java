@@ -42,22 +42,22 @@ public class CompositeTransformerTest {
                 Transformers.valueSplitOnDelimiter(','),
                 Transformers.valueStringToJava(), (key, value) -> {
                     if(value.equals(3)) {
-                        return Transformations.singleKeyValuePair("bar", value);
+                        return Transformation.of("bar", value);
                     }
                     else {
-                        return Transformations.none();
+                        return null;
                     }
                 }, (key, value) -> {
                     if(key.equals("bar")) {
-                        return Transformations.singleKeyToMultiValues(key,
-                                value, value.toString() + "-Extra");
+                        return Transformation.of(key, value,
+                                value.toString() + "-Extra");
                     }
                     else {
                         return null;
                     }
                 });
         Map<String, Collection<Object>> transformed = transformer
-                .transform("Foo", "1,2,3,4,1");
+                .transform("Foo", (Object) "1,2,3,4,1");
         Assert.assertEquals(ImmutableMap.of("foo", ImmutableList.of(1, 2, 4, 1),
                 "bar", ImmutableList.of(3, "3-Extra")), transformed);
 
@@ -72,17 +72,15 @@ public class CompositeTransformerTest {
                         (key, value) -> {
                             switch (key) {
                             case "Foo1":
-                                return Transformations.singleKeyValuePair(
-                                        "foo.1.name", value);
+                                return Transformation.of("foo.1.name", value);
                             case "Foo1Description":
-                                return Transformations.singleKeyValuePair(
-                                        "foo.1.description", value);
+                                return Transformation.of("foo.1.description",
+                                        value);
                             case "Foo2":
-                                return Transformations.singleKeyValuePair(
-                                        "foo.2.name", value);
+                                return Transformation.of("foo.2.name", value);
                             case "Foo2Description":
-                                return Transformations.singleKeyValuePair(
-                                        "foo.2.description", value);
+                                return Transformation.of("foo.2.description",
+                                        value);
                             default:
                                 return null;
                             }

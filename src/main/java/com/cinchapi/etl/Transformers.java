@@ -54,7 +54,7 @@ public final class Transformers {
     public static Transformer keyCaseFormat(CaseFormat from, CaseFormat to) {
         return (key, value) -> {
             key = from.to(to, key);
-            return Transformations.singleKeyValuePair(key, value);
+            return Transformation.of(key, value);
         };
     }
 
@@ -79,9 +79,7 @@ public final class Transformers {
                     modified = true;
                 }
             }
-            return modified
-                    ? Transformations.singleKeyValuePair(new String(chars),
-                            value)
+            return modified ? Transformation.of(new String(chars), value)
                     : null;
         };
     }
@@ -104,9 +102,7 @@ public final class Transformers {
                     modified = true;
                 }
             }
-            return modified
-                    ? Transformations.singleKeyValuePair(sb.toString(), value)
-                    : null;
+            return modified ? Transformation.of(sb.toString(), value) : null;
         };
     }
 
@@ -117,8 +113,7 @@ public final class Transformers {
      * @return the {@link Transformer}
      */
     public static Transformer keyToLowerCase() {
-        return (key, value) -> Transformations
-                .singleKeyValuePair(key.toLowerCase(), value);
+        return (key, value) -> Transformation.of(key.toLowerCase(), value);
     }
 
     /**
@@ -138,8 +133,7 @@ public final class Transformers {
                 value = str.substring(1, str.length() - 1);
                 modified = true;
             }
-            return modified ? Transformations.singleKeyValuePair(key, value)
-                    : null;
+            return modified ? Transformation.of(key, value) : null;
         };
     }
 
@@ -168,8 +162,7 @@ public final class Transformers {
                 StringSplitter splitter = new StringSplitter((String) value,
                         delimiter, options);
                 Object[] values = splitter.toArray();
-                return values.length > 1
-                        ? Transformations.singleKeyToMultiValues(key, values)
+                return values.length > 1 ? Transformation.of(key, values)
                         : null;
             }
             else {
@@ -189,7 +182,7 @@ public final class Transformers {
             if(value instanceof String) {
                 Object converted = Convert.stringToJava((String) value);
                 return !converted.equals(value)
-                        ? Transformations.singleKeyValuePair(key, converted)
+                        ? Transformation.of(key, converted)
                         : null;
             }
             else {
