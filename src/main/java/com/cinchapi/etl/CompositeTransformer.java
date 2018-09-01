@@ -15,15 +15,16 @@
  */
 package com.cinchapi.etl;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import javax.annotation.Nullable;
 
-import com.cinchapi.common.collect.Collections;
+import com.cinchapi.common.collect.AnyMaps;
+import com.cinchapi.common.collect.MergeStrategies;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 
 /**
@@ -50,35 +51,26 @@ class CompositeTransformer implements Transformer {
      * @return the transformed object after applying the {@code transformer} and
      *         merging with the {@code current}
      */
-    private static Map<String, Collection<Object>> transformAndMerge(
-            Transformer transformer, Map<String, Collection<Object>> object,
-            @Nullable Map<String, Collection<Object>> next) {
-        for (Entry<String, Collection<Object>> entry : object.entrySet()) {
+    private static Map<String, Object> transformAndMerge(
+            Transformer transformer, Map<String, Object> object,
+            @Nullable Map<String, Object> next) {
+        for (Entry<String, Object> entry : object.entrySet()) {
             String key = entry.getKey();
-            Collection<Object> values = entry.getValue();
-            for (Object value : values) {
-                Map<String, Collection<Object>> transformed = transformer
-                        .transform(key, value);
-                if(next == null && transformed != null) {
-                    // The current key/value pair resulted in a non-null
-                    // transformation, so we have to go back and re-transform
-                    // the entire object to preserve all the non-transformed
-                    // data alongside the result of transforming the current
-                    // key/value pair.
-                    return transformAndMerge(transformer, object,
-                            Maps.newLinkedHashMap());
-                }
-                else if(next != null && transformed == null) {
-                    next.merge(key, ImmutableList.of(value),
-                            Collections::concat);
-                }
-                else if(next != null && transformed != null) {
-                    for (Entry<String, Collection<Object>> tentry : transformed
-                            .entrySet()) {
-                        next.merge(tentry.getKey(), tentry.getValue(),
-                                Collections::concat);
-                    }
-                }
+            Object value = entry.getValue();
+            Map<String, Object> transformed = transformer.transform(key, value);
+            if(next == null && transformed != null) {
+                // The current key/value pair resulted in a non-null
+                // transformation, so we have to go back and re-transform
+                // the entire object to preserve all the non-transformed
+                // data alongside the result of transforming the current
+                // key/value pair.
+                next = transformAndMerge(transformer, object,
+                        Maps.newLinkedHashMap());
+            }
+            else if(next != null) {
+                AnyMaps.mergeInPlace(next,
+                        transformed == null ? ImmutableMap.of(key, value)
+                                : transformed, MergeStrategies::theirs);
             }
         }
         return next;
@@ -102,10 +94,10 @@ class CompositeTransformer implements Transformer {
 
     @Override
     @Nullable
-    public Map<String, Collection<Object>> transform(String key, Object value) {
-        Map<String, Collection<Object>> transformed = null;
+    public Map<String, Object> transform(String key, Object value) {
+        Map<String, Object> transformed = null;
         for (Transformer transformer : transformers) {
-            Map<String, Collection<Object>> next = null;
+            Map<String, Object> next = null;
             if(transformed == null) {
                 // Either this is the first attempt to transform key/value or
                 // all other previous attempts have declined to do so.

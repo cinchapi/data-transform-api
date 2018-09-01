@@ -15,18 +15,13 @@
  */
 package com.cinchapi.etl;
 
-import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
-
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.cinchapi.common.collect.Collections;
+import com.cinchapi.common.collect.Association;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 
 /**
  * Unit tests for the {@link CompositeTransformer} class.
@@ -37,34 +32,34 @@ public class CompositeTransformerTest {
 
     @Test
     public void testCase1() {
-        Transformer transformer = Transformers.compose(
+        Transformer transformer = Transformers.composeForEach(
                 Transformers.keyToLowerCase(),
                 Transformers.valueSplitOnDelimiter(','),
                 Transformers.valueStringToJava(), (key, value) -> {
                     if(value.equals(3)) {
-                        return Transformation.of("bar", value);
+                        return Transformation.to("bar", value);
                     }
                     else {
                         return null;
                     }
                 }, (key, value) -> {
                     if(key.equals("bar")) {
-                        return Transformation.of(key, value,
+                        return Transformation.to(key, value,
                                 value.toString() + "-Extra");
                     }
                     else {
                         return null;
                     }
                 });
-        Map<String, Collection<Object>> transformed = transformer
-                .transform("Foo", (Object) "1,2,3,4,1");
+        Map<String, Object> transformed = transformer.transform("Foo",
+                (Object) "1,2,3,4,1");
         Assert.assertEquals(ImmutableMap.of("foo", ImmutableList.of(1, 2, 4, 1),
                 "bar", ImmutableList.of(3, "3-Extra")), transformed);
 
     }
 
     @Test
-    public void testCase2() {
+    public void testTransformObjectWithTransformationsToNavigableKeys() {
         Transformer transformer = Transformers
                 .compose(
                         Transformers.keyStripInvalidChars(
@@ -72,46 +67,58 @@ public class CompositeTransformerTest {
                         (key, value) -> {
                             switch (key) {
                             case "Foo1":
-                                return Transformation.of("foo.1.name", value);
+                                return Transformation.to("foo.1.name", value);
                             case "Foo1Description":
-                                return Transformation.of("foo.1.description",
+                                return Transformation.to("foo.1.description",
                                         value);
                             case "Foo2":
-                                return Transformation.of("foo.2.name", value);
+                                return Transformation.to("foo.2.name", value);
                             case "Foo2Description":
-                                return Transformation.of("foo.2.description",
+                                return Transformation.to("foo.2.description",
                                         value);
                             default:
                                 return null;
                             }
                         });
-        Map<String, Set<Object>> object = ImmutableMap.of("Foo1",
-                ImmutableSet.of("Bar"), "Foo1 Description",
-                ImmutableSet.of("Bar Bar"), "Foo2", ImmutableSet.of("Bar 2"),
-                "Foo2 Description", ImmutableSet.of("Bar Bar"));
-        Map<String, Collection<Object>> transformed = Maps.newLinkedHashMap();
-        object.forEach((key, values) -> {
-            values.forEach(value -> {
-                Map<String, Collection<Object>> t = transformer.transform(key,
-                        value);
-                if(t != null) {
-                    t.forEach((k, vs) -> {
-                        transformed.merge(k, vs, Collections::concat);
-                    });
-                }
-                else {
-                    transformed.merge(key, ImmutableList.of(value),
-                            Collections::concat);
-                }
+        Map<String, Object> object = ImmutableMap.of("Foo1", "Bar",
+                "Foo1 Description", "Bar Bar", "Foo2", "Bar 2",
+                "Foo2 Description", "Bar Bar");
+        Map<String, Object> transformed = transformer.transform(object);
+        System.out.println(transformed);
+        Assert.assertEquals(ImmutableMap.of("foo.1.name", "Bar",
+                "foo.1.description", "Bar Bar", "foo.2.name", "Bar 2",
+                "foo.2.description", "Bar Bar"), transformed);
+    }
 
-            });
-        });
-        Assert.assertEquals(
-                ImmutableMap.of("foo.1.name", ImmutableList.of("Bar"),
-                        "foo.1.description", ImmutableList.of("Bar Bar"),
-                        "foo.2.name", ImmutableList.of("Bar 2"),
-                        "foo.2.description", ImmutableList.of("Bar Bar")),
-                transformed);
+    @Test
+    public void testTransformObjectWithTransformationsToNavigableKeysAndExplode() {
+        Transformer transformer = Transformers
+                .compose(
+                        Transformers.keyStripInvalidChars(
+                                c -> !Character.isWhitespace(c)),
+                        (key, value) -> {
+                            switch (key) {
+                            case "Foo1":
+                                return Transformation.to("foo.0.name", value);
+                            case "Foo1Description":
+                                return Transformation.to("foo.0.description",
+                                        value);
+                            case "Foo2":
+                                return Transformation.to("foo.1.name", value);
+                            case "Foo2Description":
+                                return Transformation.to("foo.1.description",
+                                        value);
+                            default:
+                                return null;
+                            }
+                        }, Transformers.explode());
+        Map<String, Object> object = ImmutableMap.of("Foo1", "Bar",
+                "Foo1 Description", "Bar Bar", "Foo2", "Bar 2",
+                "Foo2 Description", "Bar Bar");
+        Map<String, Object> transformed = transformer.transform(object);
+        Assert.assertEquals(Association.of(ImmutableMap.of("foo.0.name", "Bar",
+                "foo.0.description", "Bar Bar", "foo.1.name", "Bar 2",
+                "foo.1.description", "Bar Bar")), transformed);
     }
 
 }
