@@ -16,13 +16,15 @@
 package com.cinchapi.etl;
 
 import java.util.AbstractMap;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
+import com.cinchapi.common.collect.MergeStrategies;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
 
 /**
  * A {@link Transformer} is a routine that takes a key/value pair and
@@ -68,17 +70,38 @@ public interface Transformer {
     @Nullable
     @Deprecated
     public default Entry<String, Object> transform(String key, String value) {
-        Map<String, Collection<Object>> transformed = transform(key,
-                (Object) value);
+        Map<String, Object> transformed = transform(key, (Object) value);
         if(transformed != null) {
-            Entry<String, Collection<Object>> entry = Iterables
+            Entry<String, Object> entry = Iterables
                     .getFirst(transformed.entrySet(), null);
             if(entry != null) {
                 return new AbstractMap.SimpleImmutableEntry<>(entry.getKey(),
-                        Iterables.get(entry.getValue(), 0));
+                        entry.getValue());
             }
         }
         return null;
+    }
+
+    /**
+     * Transform all of the key/value pairs in the {@code object} and returned
+     * the merged result.
+     * <p>
+     * The result of the transformations will be merged using the
+     * {@link MergeStrategies#upsert(Object, Object) upsert} merge strategy.
+     * </p>
+     * 
+     * @param object
+     * @return the transformation
+     */
+    public default Map<String, Object> transform(Map<String, Object> object) {
+        Map<String, Object> transformed = Maps.newLinkedHashMap();
+        object.forEach((key, value) -> {
+            Map<String, Object> data = transform(key, value);
+            data = data == null ? ImmutableMap.of(key, value) : data;
+            data.forEach(
+                    (k, v) -> transformed.merge(k, v, MergeStrategies::upsert));
+        });
+        return transformed;
     }
 
     /**
@@ -95,7 +118,8 @@ public interface Transformer {
      * this method returns a {@link Map} which contains the data that will
      * <em>replace</em> the original {@code key} and {@code value}. So, if the
      * input parameters are part of a larger data map, the caller should
-     * {@link AnyMaps#merge(Map)} the data from this map with the source data.
+     * {@link com.cinchapi.common.collect.Association#merge(Map) merge} the data
+     * from this map with the source data.
      * </p>
      * <p>
      * Even though the inputs to this method are simple, a {@link Map} is
@@ -108,7 +132,7 @@ public interface Transformer {
      * </ul>
      * For the basic case of transforming a single key/value pair into another
      * single key/value pair, you should use the
-     * {@link Transformation#of(Object, Object)} utility.
+     * {@link Transformation#to(Object, Object)} utility.
      * </p>
      * 
      * @param key the raw key to potentially transform
@@ -116,6 +140,6 @@ public interface Transformer {
      * @return the transformation
      */
     @Nullable
-    public Map<String, Collection<Object>> transform(String key, Object value);
+    public Map<String, Object> transform(String key, Object value);
 
 }

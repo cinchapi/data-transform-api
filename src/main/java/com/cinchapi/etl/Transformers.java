@@ -16,14 +16,21 @@
 package com.cinchapi.etl;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.cinchapi.common.base.validate.Check;
+import com.cinchapi.common.collect.AnyMaps;
+import com.cinchapi.common.collect.Association;
+import com.cinchapi.common.collect.MergeStrategies;
 import com.cinchapi.concourse.util.Convert;
 import com.cinchapi.concourse.util.SplitOption;
 import com.cinchapi.concourse.util.StringSplitter;
 import com.cinchapi.concourse.util.Strings;
 import com.google.common.base.CaseFormat;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 
 /**
  * Utilities for import {@link Transformer} objects.
@@ -44,6 +51,66 @@ public final class Transformers {
     }
 
     /**
+     * Return a {@link CompositeTransformer} that wrapers each of the
+     * {@code transformers} in a {@link #forEach(Transformer)} transformer} and
+     * invokes each of them in order
+     * 
+     * @param transformers
+     * @return a {@link CompositeTransformer}
+     */
+    public static Transformer composeForEach(Transformer... transformers) {
+        return new CompositeTransformer(Arrays.asList(transformers).stream()
+                .map(transformer -> forEach(transformer))
+                .collect(Collectors.toList()));
+    }
+
+    /**
+     * Return a {@link Transformer} that explodes a {@code key}/{@code value}
+     * pair into a nested data structure.
+     * 
+     * @return the transformer
+     */
+    public static Transformer explode() {
+        return (key, value) -> Association.of(ImmutableMap.of(key, value));
+    }
+
+    /**
+     * Return a {@link Transformer} that will apply the provided
+     * {@code transformer} to every item in a value that is a {@link Collection}
+     * or to the value itself if the value is not a {@link Collection}.
+     * <p>
+     * NOTE: You should always wrap subsequent {@link Transformer transformers}
+     * within this this one when it is likely that the input values will be
+     * collections instead of "flat" objects. For instance, if you have a
+     * {@link #compose(Transformer...) composite} transformation chain and one
+     * of the transformers in the sequence is
+     * {@link #valueSplitOnDelimiter(char, SplitOption...)}, you should wrap all
+     * the following transformers using this method to ensure that the logic is
+     * applied to each item.
+     * </p>
+     * 
+     * @param transformer the {@link Transformer} to apply to every element
+     * @return the transformer
+     */
+    @SuppressWarnings("unchecked")
+    public static Transformer forEach(Transformer transformer) {
+        return (key, value) -> {
+            if(value instanceof Collection) {
+                Map<String, Object> transformed = Maps.newLinkedHashMap();
+                for (Object v : (Collection<Object>) value) {
+                    Map<String, Object> theirs = transformer.transform(key, v);
+                    AnyMaps.mergeInPlace(transformed, theirs != null ? theirs : ImmutableMap.of(key, v),
+                            MergeStrategies::concat);
+                }
+                return transformed.isEmpty() ? null : transformed;
+            }
+            else {
+                return transformer.transform(key, value);
+            }
+        };
+    }
+
+    /**
      * Return a {@link Transformer} that converts keys {@code from} one case
      * format {@code to} another one.
      * 
@@ -54,7 +121,7 @@ public final class Transformers {
     public static Transformer keyCaseFormat(CaseFormat from, CaseFormat to) {
         return (key, value) -> {
             key = from.to(to, key);
-            return Transformation.of(key, value);
+            return Transformation.to(key, value);
         };
     }
 
@@ -79,7 +146,7 @@ public final class Transformers {
                     modified = true;
                 }
             }
-            return modified ? Transformation.of(new String(chars), value)
+            return modified ? Transformation.to(new String(chars), value)
                     : null;
         };
     }
@@ -102,7 +169,7 @@ public final class Transformers {
                     modified = true;
                 }
             }
-            return modified ? Transformation.of(sb.toString(), value) : null;
+            return modified ? Transformation.to(sb.toString(), value) : null;
         };
     }
 
@@ -113,7 +180,7 @@ public final class Transformers {
      * @return the {@link Transformer}
      */
     public static Transformer keyToLowerCase() {
-        return (key, value) -> Transformation.of(key.toLowerCase(), value);
+        return (key, value) -> Transformation.to(key.toLowerCase(), value);
     }
 
     /**
@@ -133,7 +200,7 @@ public final class Transformers {
                 value = str.substring(1, str.length() - 1);
                 modified = true;
             }
-            return modified ? Transformation.of(key, value) : null;
+            return modified ? Transformation.to(key, value) : null;
         };
     }
 
@@ -162,7 +229,7 @@ public final class Transformers {
                 StringSplitter splitter = new StringSplitter((String) value,
                         delimiter, options);
                 Object[] values = splitter.toArray();
-                return values.length > 1 ? Transformation.of(key, values)
+                return values.length > 1 ? Transformation.to(key, values)
                         : null;
             }
             else {
@@ -182,7 +249,7 @@ public final class Transformers {
             if(value instanceof String) {
                 Object converted = Convert.stringToJava((String) value);
                 return !converted.equals(value)
-                        ? Transformation.of(key, converted)
+                        ? Transformation.to(key, converted)
                         : null;
             }
             else {

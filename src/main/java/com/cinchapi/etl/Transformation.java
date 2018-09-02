@@ -15,25 +15,19 @@
  */
 package com.cinchapi.etl;
 
-import java.util.AbstractMap;
-import java.util.Collection;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
 /**
- * A {@link Transformation} is a {@link Map mapping from key to a one or more
- * values wrapped in a {@link Collection}. This class exists purely for
- * semantics and is not extended for instantiation. It contains static factory
- * methods for common transformations.
+ * Contains utility for generations {@link Transformation} that can be returned
+ * from {@link Transformer transformers}.
  * 
  * @author Jeff Nelson
  */
-public final class Transformation
-        extends AbstractMap<String, Collection<Object>> {
+public final class Transformation {
 
     private Transformation() {/* no-init */}
 
@@ -44,8 +38,8 @@ public final class Transformation
      * @param value
      * @return the transformation
      */
-    public static Map<String, Collection<Object>> of(String key, Object value) {
-        return ImmutableMap.of(key, ImmutableList.of(value));
+    public static Map<String, Object> to(String key, Object value) {
+        return ImmutableMap.of(key, value);
     }
 
     /**
@@ -56,14 +50,30 @@ public final class Transformation
      * @param values
      * @return the transformation
      */
-    public static Map<String, Collection<Object>> of(String key,
-            Object... values) {
-        return ImmutableMap.of(key, Lists.newArrayList(values));
+    public static Map<String, Object> to(String key, Object[] values) {
+        List<Object> vs = Lists.newArrayList();
+        for (Object v : values) {
+            vs.add(v);
+        }
+        return ImmutableMap.of(key, vs);
     }
 
-    @Override
-    public Set<Entry<String, Collection<Object>>> entrySet() {
-        throw new UnsupportedOperationException();
+    /**
+     * Return a transformation containing mapping from a single key to multiple
+     * values.
+     * 
+     * @param key
+     * @param values
+     * @return the transformation
+     */
+    public static Map<String, Object> to(String key, Object value,
+            Object... values) {
+        List<Object> vs = Lists.newArrayList();
+        vs.add(value);
+        for (Object v : values) {
+            vs.add(v);
+        }
+        return ImmutableMap.of(key, vs);
     }
 
 }
