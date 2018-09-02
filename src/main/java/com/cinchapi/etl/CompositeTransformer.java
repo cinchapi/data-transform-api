@@ -22,6 +22,7 @@ import javax.annotation.Nullable;
 
 import com.cinchapi.common.collect.AnyMaps;
 import com.cinchapi.common.collect.MergeStrategies;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -59,18 +60,19 @@ class CompositeTransformer implements Transformer {
             Object value = entry.getValue();
             Map<String, Object> transformed = transformer.transform(key, value);
             if(next == null && transformed != null) {
-                // The current key/value pair resulted in a non-null
-                // transformation, so we have to go back and re-transform
-                // the entire object to preserve all the non-transformed
-                // data alongside the result of transforming the current
-                // key/value pair.
+                // The current key/value pair is the first to result in a
+                // non-null transformation, so we have to go back and
+                // re-transform the entire object to preserve all the
+                // non-transformed data alongside the result of transforming the
+                // current key/value pair.
                 next = transformAndMerge(transformer, object,
                         Maps.newLinkedHashMap());
             }
             else if(next != null) {
                 AnyMaps.mergeInPlace(next,
                         transformed == null ? ImmutableMap.of(key, value)
-                                : transformed, MergeStrategies::theirs);
+                                : transformed,
+                        MergeStrategies::theirs);
             }
         }
         return next;
@@ -90,6 +92,24 @@ class CompositeTransformer implements Transformer {
     public CompositeTransformer(List<Transformer> transformers) {
         Preconditions.checkArgument(!transformers.isEmpty());
         this.transformers = ImmutableList.copyOf(transformers);
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * NOTE: This {@link Transformer} users a breadth-first strategy where a
+     * composed transformer is applied to the entire {@code object} before the
+     * next one.
+     * </p>
+     */
+    @Override
+    @Nullable
+    public Map<String, Object> transform(Map<String, Object> object) {
+        for (Transformer transformer : transformers) {
+            object = MoreObjects.firstNonNull(transformer.transform(object),
+                    object);
+        }
+        return object;
     }
 
     @Override
