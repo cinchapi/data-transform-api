@@ -60,26 +60,12 @@ public class CompositeTransformerTest {
 
     @Test
     public void testTransformObjectWithTransformationsToNavigableKeys() {
-        Transformer transformer = Transformers
-                .compose(
-                        Transformers.keyStripInvalidChars(
-                                c -> !Character.isWhitespace(c)),
-                        (key, value) -> {
-                            switch (key) {
-                            case "Foo1":
-                                return Transformation.to("foo.1.name", value);
-                            case "Foo1Description":
-                                return Transformation.to("foo.1.description",
-                                        value);
-                            case "Foo2":
-                                return Transformation.to("foo.2.name", value);
-                            case "Foo2Description":
-                                return Transformation.to("foo.2.description",
-                                        value);
-                            default:
-                                return null;
-                            }
-                        });
+        Transformer transformer = Transformers.compose(
+                Transformers
+                        .keyStripInvalidChars(c -> !Character.isWhitespace(c)),
+                Transformers.keyMap(ImmutableMap.of("Foo1", "foo.1.name",
+                        "Foo1Description", "foo.1.description", "Foo2",
+                        "foo.2.name", "Foo2Description", "foo.2.description")));
         Map<String, Object> object = ImmutableMap.of("Foo1", "Bar",
                 "Foo1 Description", "Bar Bar", "Foo2", "Bar 2",
                 "Foo2 Description", "Bar Bar");
@@ -92,26 +78,13 @@ public class CompositeTransformerTest {
 
     @Test
     public void testTransformObjectWithTransformationsToNavigableKeysAndExplode() {
-        Transformer transformer = Transformers
-                .compose(
-                        Transformers.keyStripInvalidChars(
-                                c -> !Character.isWhitespace(c)),
-                        (key, value) -> {
-                            switch (key) {
-                            case "Foo1":
-                                return Transformation.to("foo.0.name", value);
-                            case "Foo1Description":
-                                return Transformation.to("foo.0.description",
-                                        value);
-                            case "Foo2":
-                                return Transformation.to("foo.1.name", value);
-                            case "Foo2Description":
-                                return Transformation.to("foo.1.description",
-                                        value);
-                            default:
-                                return null;
-                            }
-                        }, Transformers.explode());
+        Transformer transformer = Transformers.compose(
+                Transformers
+                        .keyStripInvalidChars(c -> !Character.isWhitespace(c)),
+                Transformers.keyMap(ImmutableMap.of("Foo1", "foo.0.name",
+                        "Foo1Description", "foo.0.description", "Foo2",
+                        "foo.1.name", "Foo2Description", "foo.1.description")),
+                Transformers.explode());
         Map<String, Object> object = ImmutableMap.of("Foo1", "Bar",
                 "Foo1 Description", "Bar Bar", "Foo2", "Bar 2",
                 "Foo2 Description", "Bar Bar");

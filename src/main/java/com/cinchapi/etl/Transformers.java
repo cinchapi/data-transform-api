@@ -99,7 +99,8 @@ public final class Transformers {
                 Map<String, Object> transformed = Maps.newLinkedHashMap();
                 for (Object v : (Collection<Object>) value) {
                     Map<String, Object> theirs = transformer.transform(key, v);
-                    AnyMaps.mergeInPlace(transformed, theirs != null ? theirs : ImmutableMap.of(key, v),
+                    AnyMaps.mergeInPlace(transformed,
+                            theirs != null ? theirs : ImmutableMap.of(key, v),
                             MergeStrategies::concat);
                 }
                 return transformed.isEmpty() ? null : transformed;
@@ -122,6 +123,24 @@ public final class Transformers {
         return (key, value) -> {
             key = from.to(to, key);
             return Transformation.to(key, value);
+        };
+    }
+
+    /**
+     * Transform keys to other keys using the provided {@code map}ping.
+     * 
+     * @param map
+     * @return the transformer
+     */
+    public static Transformer keyMap(Map<String, String> map) {
+        return (key, value) -> {
+            key = map.get(key);
+            if(key != null) {
+                return Transformation.to(key, value);
+            }
+            else {
+                return null;
+            }
         };
     }
 
