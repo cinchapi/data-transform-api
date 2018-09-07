@@ -24,6 +24,8 @@ import com.cinchapi.common.base.validate.Check;
 import com.cinchapi.common.collect.AnyMaps;
 import com.cinchapi.common.collect.Association;
 import com.cinchapi.common.collect.MergeStrategies;
+import com.cinchapi.concourse.Tag;
+import com.cinchapi.concourse.Timestamp;
 import com.cinchapi.concourse.util.Convert;
 import com.cinchapi.concourse.util.SplitOption;
 import com.cinchapi.concourse.util.StringSplitter;
@@ -231,6 +233,99 @@ public final class Transformers {
      */
     public static Transformer noOp() {
         return (key, value) -> null;
+    }
+
+    /**
+     * Transform values to a {@link Boolean} if possible. If the value cannot be
+     * transformed, an exception is thrown.
+     * 
+     * @return the transformer
+     */
+    public static Transformer valueAsBoolean() {
+        return (key, value) -> {
+            if(value instanceof Boolean) {
+                return null;
+            }
+            else {
+                return Transformation.to(key,
+                        Boolean.parseBoolean(value.toString()));
+            }
+        };
+    }
+
+    /**
+     * Transform values to a {@link Number} if possible. If the value cannot be
+     * transformed, an exception is thrown.
+     * 
+     * @return the transformer
+     */
+    public static Transformer valueAsNumber() {
+        return (key, value) -> {
+            if(value instanceof Number) {
+                return null;
+            }
+            else {
+                Number number = Strings.tryParseNumber(value.toString());
+                if(number != null) {
+                    return Transformation.to(key, number);
+                }
+                else {
+                    throw new IllegalArgumentException(
+                            value + " cannot be transformed to a Number");
+                }
+            }
+        };
+    }
+
+    /**
+     * Transform values to a
+     * {@link Convert#stringToResolvableLinkInstruction(String) resolvable link
+     * instruction}.
+     * 
+     * @return the transformer
+     */
+    public static Transformer valueAsResolvableLinkInstruction() {
+        return (key, value) -> Transformation.to(key,
+                Convert.stringToResolvableLinkInstruction(value.toString()));
+    }
+
+    /**
+     * Transform values to a {@link Tag} if possible. If the value cannot be
+     * transformed, an exception is thrown.
+     * 
+     * @return the transformer
+     */
+    public static Transformer valueAsTag() {
+        return (key, value) -> {
+            if(value instanceof Tag) {
+                return null;
+            }
+            else {
+                return Transformation.to(key, Tag.create(value.toString()));
+            }
+        };
+    }
+
+    /**
+     * Transform values to a {@link Timestamp} if possible. If the value cannot
+     * be transformed, an exception is thrown.
+     * 
+     * @return the transformer
+     */
+    public static Transformer valueAsTimestamp() {
+        return (key, value) -> {
+            if(value instanceof Timestamp) {
+                return null;
+            }
+            else if(value instanceof Number) {
+                return Transformation.to(key,
+                        Timestamp.fromMicros(((Number) value).longValue()));
+            }
+            else {
+                return Transformation.to(key,
+                        Timestamp.fromString(value.toString()));
+            }
+        };
     }
 
     /**
