@@ -353,7 +353,7 @@ public final class Transformers {
      * @param adjective
      * @return the transformer
      */
-    public static Transformer removeValueIfItIs(Adjective adjective) {
+    public static Transformer removeValuesThatAre(Adjective adjective) {
         return (key, value) -> adjective.describes(value) ? ImmutableMap.of()
                 : null;
     }
