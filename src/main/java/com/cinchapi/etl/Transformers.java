@@ -238,6 +238,24 @@ public final class Transformers {
     }
 
     /**
+     * Return a {@link Transformer} that only attempts transformation if the
+     * value is not {@code null}.
+     * 
+     * @param transformer
+     * @return the transformer
+     */
+    public static Transformer nullSafe(Transformer transformer) {
+        return (key, value) -> {
+            if(value != null) {
+                return transformer.transform(key, value);
+            }
+            else {
+                return null;
+            }
+        };
+    }
+
+    /**
      * Transform values to a {@link Boolean} if possible. If the value cannot be
      * transformed, an exception is thrown.
      * 
