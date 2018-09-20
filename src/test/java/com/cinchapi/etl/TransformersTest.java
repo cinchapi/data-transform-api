@@ -132,4 +132,12 @@ public class TransformersTest {
                 .transform("foo", (Object) null));
     }
 
+    @Test
+    public void testValueSkipIfEmpty() {
+        Empty empty = Empty.is(ImmutableMap.of(String.class,
+                str -> StringUtils.isBlank((String) str)));
+        Assert.assertEquals(ImmutableMap.of(), Transformers.skipIfValueIs(empty)
+                .transform("foo", (Object) "   "));
+    }
+
 }

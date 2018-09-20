@@ -24,6 +24,7 @@ import com.cinchapi.common.collect.AnyMaps;
 import com.cinchapi.common.collect.Association;
 import com.cinchapi.common.collect.MergeStrategies;
 import com.cinchapi.common.collect.Sequences;
+import com.cinchapi.common.describe.Adjective;
 import com.cinchapi.common.describe.Empty;
 import com.cinchapi.concourse.Tag;
 import com.cinchapi.concourse.Timestamp;
@@ -340,6 +341,22 @@ public final class Transformers {
                         Timestamp.fromString(value.toString()));
             }
         };
+    }
+
+    /**
+     * Return a {@link Transformer} that will cause a key/value pair to be
+     * "skipped" if the value is described by the provided {@code adjective}.
+     * <p>
+     * Skipping is accomplished by returning an empty map for the
+     * transformation.
+     * </p>
+     * 
+     * @param adjective
+     * @return the transformer
+     */
+    public static Transformer skipIfValueIs(Adjective adjective) {
+        return (key, value) -> adjective.describes(value) ? ImmutableMap.of()
+                : null;
     }
 
     /**
