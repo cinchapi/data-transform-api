@@ -16,7 +16,6 @@
 package com.cinchapi.etl;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -24,6 +23,7 @@ import com.cinchapi.common.base.validate.Check;
 import com.cinchapi.common.collect.AnyMaps;
 import com.cinchapi.common.collect.Association;
 import com.cinchapi.common.collect.MergeStrategies;
+import com.cinchapi.common.collect.Sequences;
 import com.cinchapi.concourse.Tag;
 import com.cinchapi.concourse.Timestamp;
 import com.cinchapi.concourse.util.Convert;
@@ -78,8 +78,9 @@ public final class Transformers {
 
     /**
      * Return a {@link Transformer} that will apply the provided
-     * {@code transformer} to every item in a value that is a {@link Collection}
-     * or to the value itself if the value is not a {@link Collection}.
+     * {@code transformer} to every item in a value that is a
+     * {@link Sequences#isSequence(Object) sequence} or to the value itself if
+     * the value is not a sequence.
      * <p>
      * NOTE: You should always wrap subsequent {@link Transformer transformers}
      * within this this one when it is likely that the input values will be
@@ -94,17 +95,17 @@ public final class Transformers {
      * @param transformer the {@link Transformer} to apply to every element
      * @return the transformer
      */
-    @SuppressWarnings("unchecked")
     public static Transformer forEach(Transformer transformer) {
         return (key, value) -> {
-            if(value instanceof Collection) {
+            if(Sequences.isSequence(value)) {
                 Map<String, Object> transformed = Maps.newLinkedHashMap();
-                for (Object v : (Collection<Object>) value) {
-                    Map<String, Object> theirs = transformer.transform(key, v);
+                Sequences.forEach(value, val -> {
+                    Map<String, Object> theirs = transformer.transform(key,
+                            val);
                     AnyMaps.mergeInPlace(transformed,
-                            theirs != null ? theirs : ImmutableMap.of(key, v),
+                            theirs != null ? theirs : ImmutableMap.of(key, val),
                             MergeStrategies::concat);
-                }
+                });
                 return transformed.isEmpty() ? null : transformed;
             }
             else {
