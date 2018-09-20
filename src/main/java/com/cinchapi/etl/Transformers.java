@@ -24,6 +24,7 @@ import com.cinchapi.common.collect.AnyMaps;
 import com.cinchapi.common.collect.Association;
 import com.cinchapi.common.collect.MergeStrategies;
 import com.cinchapi.common.collect.Sequences;
+import com.cinchapi.common.describe.Empty;
 import com.cinchapi.concourse.Tag;
 import com.cinchapi.concourse.Timestamp;
 import com.cinchapi.concourse.util.Convert;
@@ -325,6 +326,24 @@ public final class Transformers {
             else {
                 return Transformation.to(key,
                         Timestamp.fromString(value.toString()));
+            }
+        };
+    }
+
+    /**
+     * Transform a value that is considered to be {@link Empty empty} to
+     * {@code null}.
+     * 
+     * @param empty
+     * @return the transformer
+     */
+    public static Transformer valueNullifyIfEmpty(Empty empty) {
+        return (key, value) -> {
+            if(value != null && empty.describes(value)) {
+                return Transformation.to(key, (Object) null);
+            }
+            else {
+                return null;
             }
         };
     }

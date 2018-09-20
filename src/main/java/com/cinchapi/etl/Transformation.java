@@ -15,11 +15,13 @@
  */
 package com.cinchapi.etl;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 /**
  * Contains utility for generations {@link Transformation} that can be returned
@@ -39,7 +41,10 @@ public final class Transformation {
      * @return the transformation
      */
     public static Map<String, Object> to(String key, Object value) {
-        return ImmutableMap.of(key, value);
+        Map<String, Object> transformation = Maps
+                .newLinkedHashMapWithExpectedSize(1);
+        transformation.put(key, value);
+        return Collections.unmodifiableMap(transformation);
     }
 
     /**

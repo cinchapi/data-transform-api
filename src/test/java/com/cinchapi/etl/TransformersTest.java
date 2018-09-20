@@ -17,12 +17,16 @@ package com.cinchapi.etl;
 
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.cinchapi.common.describe.Empty;
 import com.cinchapi.concourse.Tag;
 import com.cinchapi.concourse.util.Random;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
 
 /**
  * Unit tests for the built-in {@link Transformers}.
@@ -114,6 +118,18 @@ public class TransformersTest {
                 .transform("foo", (Object) "name = jeff");
         Object value = Iterables.getOnlyElement(transformed.values());
         Assert.assertTrue(value instanceof Tag);
+    }
+
+    @Test
+    public void testValueNullifyIfEmpty() {
+        Map<String, Object> expected = Maps.newHashMap();
+        expected.put("foo", null);
+        Empty empty = Empty.is(ImmutableMap.of(String.class,
+                str -> StringUtils.isBlank((String) str)));
+        Assert.assertEquals(expected, Transformers.valueNullifyIfEmpty(empty)
+                .transform("foo", (Object) "   "));
+        Assert.assertNull(Transformers.valueNullifyIfEmpty(empty)
+                .transform("foo", (Object) null));
     }
 
 }
