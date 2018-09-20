@@ -133,10 +133,10 @@ public class TransformersTest {
     }
 
     @Test
-    public void testValueSkipIfEmpty() {
+    public void testValueRemoveIfEmpty() {
         Empty empty = Empty.is(ImmutableMap.of(String.class,
                 str -> StringUtils.isBlank((String) str)));
-        Assert.assertEquals(ImmutableMap.of(), Transformers.skipIfValueIs(empty)
+        Assert.assertEquals(ImmutableMap.of(), Transformers.removeValueIfItIs(empty)
                 .transform("foo", (Object) "   "));
     }
 
