@@ -245,14 +245,8 @@ public final class Transformers {
      * @return the transformer
      */
     public static Transformer nullSafe(Transformer transformer) {
-        return (key, value) -> {
-            if(value != null) {
-                return transformer.transform(key, value);
-            }
-            else {
-                return null;
-            }
-        };
+        return (key, value) -> value != null ? transformer.transform(key, value)
+                : null;
     }
 
     /**
