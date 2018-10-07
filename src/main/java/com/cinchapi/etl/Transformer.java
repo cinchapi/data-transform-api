@@ -22,7 +22,6 @@ import java.util.Map.Entry;
 import javax.annotation.Nullable;
 
 import com.cinchapi.common.collect.MergeStrategies;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 
@@ -97,7 +96,7 @@ public interface Transformer {
         Map<String, Object> transformed = Maps.newLinkedHashMap();
         object.forEach((key, value) -> {
             Map<String, Object> data = transform(key, value);
-            data = data == null ? ImmutableMap.of(key, value) : data;
+            data = data == null ? AnyMaps.create(key, value) : data;
             data.forEach(
                     (k, v) -> transformed.merge(k, v, MergeStrategies::upsert));
         });
