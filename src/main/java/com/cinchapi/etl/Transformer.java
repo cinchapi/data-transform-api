@@ -98,8 +98,7 @@ public interface Transformer {
         object.forEach((key, value) -> {
             Map<String, Object> data = transform(key, value);
             data = data == null ? AnyMaps.create(key, value) : data;
-            data.forEach(
-                    (k, v) -> transformed.merge(k, v, MergeStrategies::upsert));
+            AnyMaps.mergeInPlace(transformed, data, MergeStrategies::upsert);
         });
         return transformed;
     }

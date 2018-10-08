@@ -21,6 +21,7 @@ import org.apache.commons.lang.StringUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.cinchapi.common.collect.AnyMaps;
 import com.cinchapi.common.describe.Empty;
 import com.cinchapi.concourse.Tag;
 import com.cinchapi.concourse.util.Random;
@@ -138,6 +139,14 @@ public class TransformersTest {
                 str -> StringUtils.isBlank((String) str)));
         Assert.assertEquals(ImmutableMap.of(), Transformers.removeValuesThatAre(empty)
                 .transform("foo", (Object) "   "));
+    }
+    
+    @Test
+    public void testNullValueHandling() {
+        Transformer transformer = Transformers.noOp();
+        Map<String, Object> expected = AnyMaps.create("foo", null);
+        Map<String, Object> actual = transformer.transform(expected);
+        Assert.assertEquals(expected, actual);
     }
 
 }
