@@ -50,7 +50,7 @@ artifacts {
 }
 
 // Set the version for all Concourse dependencies
-ext.concourseVersion = '0.7.0-SNAPSHOT'
+ext.concourseVersion = '0.9.3'
 
 repositories {
     mavenCentral()
@@ -69,10 +69,10 @@ repositories {
 }
 
 dependencies {
-    compile group: 'com.cinchapi', name: 'accent4j', version: '1.2.0-SNAPSHOT', changing:true
+    compile group: 'com.cinchapi', name: 'accent4j', version: '1.2.0', changing:true
     compile group: 'com.cinchapi', name: 'concourse-driver-java', version: concourseVersion, changing:true // needed for util classes...
     compile group: 'com.google.code.findbugs', name: 'jsr305', version:'2.0.1'
-    compile group: 'com.google.guava', name:'guava', version:'21.0'
+    compile group: 'com.google.guava', name:'guava', version:'25.1-jre'
     testCompile 'junit:junit:4.11'
 }
 
@@ -88,6 +88,11 @@ if (JavaVersion.current().isJava8Compatible()) {
             options.addStringOption('Xdoclint:none', '-quiet')
         }
     }
+}
+
+signing {
+  required { gradle.taskGraph.hasTask("uploadArchives") }
+  sign configurations.archives
 }
 
 uploadArchives {
