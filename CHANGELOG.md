@@ -1,6 +1,6 @@
 # Changelog
 
-#### Version 1.1.0 (TBD)
+#### Version 1.1.0 (October 18, 2018)
 * Added an `Transformer#transform` method that takes a generic `Object` `value` parameter.
 * Added a `Transformers#noOp` static factory that provides a `Transformer` that does not perform any key or value transformations.
 * Added the following built-in `Transformers`:
