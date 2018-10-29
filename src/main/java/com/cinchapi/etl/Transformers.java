@@ -17,8 +17,10 @@ package com.cinchapi.etl;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import com.cinchapi.common.base.CaseFormats;
 import com.cinchapi.common.base.validate.Check;
 import com.cinchapi.common.collect.AnyMaps;
 import com.cinchapi.common.collect.Association;
@@ -41,6 +43,7 @@ import com.google.common.collect.Maps;
  * 
  * @author Jeff Nelson
  */
+@SuppressWarnings("deprecation")
 public final class Transformers {
 
     /**
@@ -123,11 +126,60 @@ public final class Transformers {
      * @param from the original {@link CaseFormat}
      * @param to the desired {@link CaseFormat}
      * @return the {@link Transformer}
+     * @deprecated use {@link #keyEnsureCaseFormat(CaseFormat)} or
+     *             {@link #keyConditionalConvertCaseFormat(CaseFormat, CaseFormat)}
+     *             instead depending on the desired transformation
      */
+    @Deprecated
     public static Transformer keyCaseFormat(CaseFormat from, CaseFormat to) {
         return (key, value) -> {
             key = from.to(to, key);
             return Transformation.to(key, value);
+        };
+    }
+
+    /**
+     * Return a {@link Transformer} that converts a key to a {@link CaseFormat}
+     * if and only if the key currently matches another {@code undesired}
+     * format.
+     * <p>
+     * This transformer should be use when there is only one case format that is
+     * undesirable (e.g. it is fine if a key takes on any other case format). If
+     * you want to ensure that a key matches a particular case format, use
+     * {@link #keyEnsureCaseFormat(CaseFormat)}.
+     * </p>
+     * 
+     * @param undesired
+     * @param desired
+     * @return the {@link Transformer}
+     */
+    public static Transformer keyConditionalConvertCaseFormat(
+            CaseFormat undesired, CaseFormat desired) {
+        return (key, value) -> {
+            CaseFormat format = CaseFormats.detect(key);
+            return format == undesired
+                    ? Transformation.to(undesired.to(desired, key), value)
+                    : null;
+        };
+    }
+
+    /**
+     * Return a {@link Transformer} that ensures a key is in the specified case
+     * {@link CaseFormat format}
+     * 
+     * @param format
+     * @return the {@link Transformer}
+     */
+    public static Transformer keyEnsureCaseFormat(CaseFormat format) {
+        return (key, value) -> {
+            CaseFormat current = CaseFormats.detect(key);
+            if(current != format) {
+                key = current.to(format, key);
+                return Transformation.to(key, value);
+            }
+            else {
+                return null;
+            }
         };
     }
 
@@ -142,6 +194,41 @@ public final class Transformers {
             key = map.get(key);
             if(key != null) {
                 return Transformation.to(key, value);
+            }
+            else {
+                return null;
+            }
+        };
+    }
+
+    /**
+     * Return a {@link Transformer} that removes all characters that match the
+     * {@code invalid} {@link Predicate} from a key.
+     * 
+     * @param invalid
+     * @return the {@link Transformer}
+     */
+    public static Transformer keyRemoveInvalidChars(
+            Predicate<Character> invalid) {
+        return (key, value) -> {
+            boolean modified = false;
+            for (char c : key.toCharArray()) {
+                if(invalid.test(c)) {
+                    modified = true;
+                    break;
+                }
+                else {
+                    continue;
+                }
+            }
+            if(modified) {
+                StringBuilder sb = new StringBuilder();
+                for (char c : key.toCharArray()) {
+                    if(invalid.negate().test(c)) {
+                        sb.append(c);
+                    }
+                }
+                return Transformation.to(sb.toString(), value);
             }
             else {
                 return null;
@@ -180,7 +267,13 @@ public final class Transformers {
      * Some of those characters are replaced with valid stand-ins.
      * 
      * @return the {@link Transformer}
+     * @deprecated use {@link #keyRemoveInvalidChars(Predicate)} which takes a
+     *             {@link Predicate} that tests whether a character is
+     *             <strong>invalid</strong>. Please note that said functionality
+     *             is the inverse of this method, which takes a {@link Check}
+     *             that tests whether a character is valid.
      */
+    @Deprecated
     public static Transformer keyStripInvalidChars(Check<Character> validator) {
         return (key, value) -> {
             StringBuilder sb = new StringBuilder();
@@ -208,10 +301,10 @@ public final class Transformers {
     }
 
     /**
-     * Return a {@link Transformer} that will strip single and double quotes
+     * Return a {@link Transformer} that will remove single and double quotes
      * from the beginning and end of both the key and value.
      */
-    public static Transformer keyValueStripQuotes() {
+    public static Transformer keyValueRemoveQuotes() {
         return (key, value) -> {
             boolean modified = false;
             if(Strings.isWithinQuotes(key)) {
@@ -226,6 +319,18 @@ public final class Transformers {
             }
             return modified ? Transformation.to(key, value) : null;
         };
+    }
+
+    /**
+     * Return a {@link Transformer} that will strip single and double quotes
+     * from the beginning and end of both the key and value.
+     * 
+     * @deprecated use {@link #keyValueRemoveQuotes()} which has the exact same
+     *             functionality
+     */
+    @Deprecated
+    public static Transformer keyValueStripQuotes() {
+        return keyValueRemoveQuotes();
     }
 
     /**
@@ -247,6 +352,21 @@ public final class Transformers {
      */
     public static Transformer nullSafe(Transformer transformer) {
         return (key, value) -> value != null ? transformer.transform(key, value)
+                : null;
+    }
+
+    /**
+     * Return a {@link Transformer} that will cause a key/value pair to be
+     * "removed" if the value is described by the provided {@code adjective}.
+     * <p>
+     * Removal is accomplished by returning an empty map for the transformation.
+     * </p>
+     * 
+     * @param adjective
+     * @return the transformer
+     */
+    public static Transformer removeValuesThatAre(Adjective adjective) {
+        return (key, value) -> adjective.describes(value) ? ImmutableMap.of()
                 : null;
     }
 
@@ -341,21 +461,6 @@ public final class Transformers {
                         Timestamp.fromString(value.toString()));
             }
         };
-    }
-
-    /**
-     * Return a {@link Transformer} that will cause a key/value pair to be
-     * "removed" if the value is described by the provided {@code adjective}.
-     * <p>
-     * Removal is accomplished by returning an empty map for the transformation.
-     * </p>
-     * 
-     * @param adjective
-     * @return the transformer
-     */
-    public static Transformer removeValuesThatAre(Adjective adjective) {
-        return (key, value) -> adjective.describes(value) ? ImmutableMap.of()
-                : null;
     }
 
     /**
