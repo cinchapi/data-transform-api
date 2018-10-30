@@ -16,6 +16,7 @@
 package com.cinchapi.etl;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -202,6 +203,38 @@ public final class Transformers {
     }
 
     /**
+     * Return a {@link Transformer} that replaces whitespace characters with an
+     * underscore in keys.
+     * 
+     * @return the {@link Transformer}
+     */
+    public static Transformer keyWhitespaceToUnderscore() {
+        return keyReplaceChars(ImmutableMap.of(' ', '_'));
+    }
+
+    /**
+     * Return a {@link Transformer} that removes all whitespace characters from
+     * a key.
+     * 
+     * @return the {@link Transformer}
+     */
+    public static Transformer keyRemoveWhitespace() {
+        return keyRemoveInvalidChars(Character::isWhitespace);
+    }
+
+    /**
+     * Return a {@link Transformer} that removes all the character in the
+     * {@code invalid} collection.
+     * 
+     * @param invalid
+     * @return the {@link Transformer}
+     */
+    public static Transformer keyRemoveInvalidChars(
+            Collection<Character> invalid) {
+        return keyRemoveInvalidChars(c -> invalid.contains(c));
+    }
+
+    /**
      * Return a {@link Transformer} that removes all characters that match the
      * {@code invalid} {@link Predicate} from a key.
      * 
@@ -355,6 +388,26 @@ public final class Transformers {
                 : null;
     }
 
+    public static Transformer valueRemoveIfEmpty() {
+        return valueRemoveIf(Empty.ness());
+    }
+
+    /**
+     * Return a {@link Transformer} that will cause a key/value pair to be
+     * "removed" if the value is described by the provided {@code adjective}.
+     * <p>
+     * Removal is accomplished by returning an empty map for the transformation.
+     * </p>
+     * 
+     * @param adjective
+     * @return the transformer
+     * @deprecated use {@link #valueRemoveIf(Adjective) instead}
+     */
+    @Deprecated
+    public static Transformer removeValuesThatAre(Adjective adjective) {
+        return valueRemoveIf(adjective);
+    }
+
     /**
      * Return a {@link Transformer} that will cause a key/value pair to be
      * "removed" if the value is described by the provided {@code adjective}.
@@ -365,7 +418,7 @@ public final class Transformers {
      * @param adjective
      * @return the transformer
      */
-    public static Transformer removeValuesThatAre(Adjective adjective) {
+    public static Transformer valueRemoveIf(Adjective adjective) {
         return (key, value) -> adjective.describes(value) ? ImmutableMap.of()
                 : null;
     }
@@ -461,6 +514,10 @@ public final class Transformers {
                         Timestamp.fromString(value.toString()));
             }
         };
+    }
+
+    public static Transformer valueNullifyIfEmpty() {
+        return valueNullifyIfEmpty(Empty.ness());
     }
 
     /**
