@@ -137,10 +137,10 @@ public class TransformersTest {
     public void testValueRemoveIfEmpty() {
         Empty empty = Empty.is(ImmutableMap.of(String.class,
                 str -> StringUtils.isBlank((String) str)));
-        Assert.assertEquals(ImmutableMap.of(), Transformers.removeValuesThatAre(empty)
+        Assert.assertEquals(ImmutableMap.of(), Transformers.valueRemoveIf(empty)
                 .transform("foo", (Object) "   "));
     }
-    
+
     @Test
     public void testNullValueHandling() {
         Transformer transformer = Transformers.noOp();
