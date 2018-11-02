@@ -16,9 +16,12 @@
 package com.cinchapi.etl;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
+import com.cinchapi.common.base.CaseFormats;
 import com.cinchapi.common.base.validate.Check;
 import com.cinchapi.common.collect.AnyMaps;
 import com.cinchapi.common.collect.Association;
@@ -41,6 +44,7 @@ import com.google.common.collect.Maps;
  * 
  * @author Jeff Nelson
  */
+@SuppressWarnings("deprecation")
 public final class Transformers {
 
     /**
@@ -72,7 +76,7 @@ public final class Transformers {
      * Return a {@link Transformer} that explodes a {@code key}/{@code value}
      * pair into a nested data structure.
      * 
-     * @return the transformer
+     * @return the {@link Transformer}
      */
     public static Transformer explode() {
         return (key, value) -> Association.of(ImmutableMap.of(key, value));
@@ -95,7 +99,7 @@ public final class Transformers {
      * </p>
      * 
      * @param transformer the {@link Transformer} to apply to every element
-     * @return the transformer
+     * @return the {@link Transformer}
      */
     public static Transformer forEach(Transformer transformer) {
         return (key, value) -> {
@@ -123,7 +127,11 @@ public final class Transformers {
      * @param from the original {@link CaseFormat}
      * @param to the desired {@link CaseFormat}
      * @return the {@link Transformer}
+     * @deprecated use {@link #keyEnsureCaseFormat(CaseFormat)} or
+     *             {@link #keyConditionalConvertCaseFormat(CaseFormat, CaseFormat)}
+     *             instead depending on the desired transformation
      */
+    @Deprecated
     public static Transformer keyCaseFormat(CaseFormat from, CaseFormat to) {
         return (key, value) -> {
             key = from.to(to, key);
@@ -132,16 +140,128 @@ public final class Transformers {
     }
 
     /**
+     * Return a {@link Transformer} that converts a key to a {@link CaseFormat}
+     * if and only if the key currently matches another {@code undesired}
+     * format.
+     * <p>
+     * This transformer should be use when there is only one case format that is
+     * undesirable (e.g. it is fine if a key takes on any other case format). If
+     * you want to ensure that a key matches a particular case format, use
+     * {@link #keyEnsureCaseFormat(CaseFormat)}.
+     * </p>
+     * 
+     * @param undesired
+     * @param desired
+     * @return the {@link Transformer}
+     */
+    public static Transformer keyConditionalConvertCaseFormat(
+            CaseFormat undesired, CaseFormat desired) {
+        return (key, value) -> {
+            CaseFormat format = CaseFormats.detect(key);
+            return format == undesired
+                    ? Transformation.to(undesired.to(desired, key), value)
+                    : null;
+        };
+    }
+
+    /**
+     * Return a {@link Transformer} that ensures a key is in the specified case
+     * {@link CaseFormat format}
+     * 
+     * @param format
+     * @return the {@link Transformer}
+     */
+    public static Transformer keyEnsureCaseFormat(CaseFormat format) {
+        return (key, value) -> {
+            CaseFormat current = CaseFormats.detect(key);
+            if(current != format) {
+                key = current.to(format, key);
+                return Transformation.to(key, value);
+            }
+            else {
+                return null;
+            }
+        };
+    }
+
+    /**
      * Transform keys to other keys using the provided {@code map}ping.
      * 
      * @param map
-     * @return the transformer
+     * @return the {@link Transformer}
      */
     public static Transformer keyMap(Map<String, String> map) {
         return (key, value) -> {
             key = map.get(key);
             if(key != null) {
                 return Transformation.to(key, value);
+            }
+            else {
+                return null;
+            }
+        };
+    }
+
+    /**
+     * Return a {@link Transformer} that replaces whitespace characters with an
+     * underscore in keys.
+     * 
+     * @return the {@link Transformer}
+     */
+    public static Transformer keyWhitespaceToUnderscore() {
+        return keyReplaceChars(ImmutableMap.of(' ', '_'));
+    }
+
+    /**
+     * Return a {@link Transformer} that removes all whitespace characters from
+     * a key.
+     * 
+     * @return the {@link Transformer}
+     */
+    public static Transformer keyRemoveWhitespace() {
+        return keyRemoveInvalidChars(Character::isWhitespace);
+    }
+
+    /**
+     * Return a {@link Transformer} that removes all the character in the
+     * {@code invalid} collection.
+     * 
+     * @param invalid
+     * @return the {@link Transformer}
+     */
+    public static Transformer keyRemoveInvalidChars(
+            Collection<Character> invalid) {
+        return keyRemoveInvalidChars(c -> invalid.contains(c));
+    }
+
+    /**
+     * Return a {@link Transformer} that removes all characters that match the
+     * {@code invalid} {@link Predicate} from a key.
+     * 
+     * @param invalid
+     * @return the {@link Transformer}
+     */
+    public static Transformer keyRemoveInvalidChars(
+            Predicate<Character> invalid) {
+        return (key, value) -> {
+            boolean modified = false;
+            for (char c : key.toCharArray()) {
+                if(invalid.test(c)) {
+                    modified = true;
+                    break;
+                }
+                else {
+                    continue;
+                }
+            }
+            if(modified) {
+                StringBuilder sb = new StringBuilder();
+                for (char c : key.toCharArray()) {
+                    if(invalid.negate().test(c)) {
+                        sb.append(c);
+                    }
+                }
+                return Transformation.to(sb.toString(), value);
             }
             else {
                 return null;
@@ -180,7 +300,13 @@ public final class Transformers {
      * Some of those characters are replaced with valid stand-ins.
      * 
      * @return the {@link Transformer}
+     * @deprecated use {@link #keyRemoveInvalidChars(Predicate)} which takes a
+     *             {@link Predicate} that tests whether a character is
+     *             <strong>invalid</strong>. Please note that said functionality
+     *             is the inverse of this method, which takes a {@link Check}
+     *             that tests whether a character is valid.
      */
+    @Deprecated
     public static Transformer keyStripInvalidChars(Check<Character> validator) {
         return (key, value) -> {
             StringBuilder sb = new StringBuilder();
@@ -208,10 +334,10 @@ public final class Transformers {
     }
 
     /**
-     * Return a {@link Transformer} that will strip single and double quotes
+     * Return a {@link Transformer} that will remove single and double quotes
      * from the beginning and end of both the key and value.
      */
-    public static Transformer keyValueStripQuotes() {
+    public static Transformer keyValueRemoveQuotes() {
         return (key, value) -> {
             boolean modified = false;
             if(Strings.isWithinQuotes(key)) {
@@ -229,6 +355,18 @@ public final class Transformers {
     }
 
     /**
+     * Return a {@link Transformer} that will strip single and double quotes
+     * from the beginning and end of both the key and value.
+     * 
+     * @deprecated use {@link #keyValueRemoveQuotes()} which has the exact same
+     *             functionality
+     */
+    @Deprecated
+    public static Transformer keyValueStripQuotes() {
+        return keyValueRemoveQuotes();
+    }
+
+    /**
      * Return a {@link Transformer} that does not perform any key or value
      * transformations.
      * 
@@ -243,18 +381,54 @@ public final class Transformers {
      * value is not {@code null}.
      * 
      * @param transformer
-     * @return the transformer
+     * @return the {@link Transformer}
      */
     public static Transformer nullSafe(Transformer transformer) {
         return (key, value) -> value != null ? transformer.transform(key, value)
                 : null;
     }
 
+    public static Transformer valueRemoveIfEmpty() {
+        return valueRemoveIf(Empty.ness());
+    }
+
     /**
-     * Transform values to a {@link Boolean} if possible. If the value cannot be
-     * transformed, an exception is thrown.
+     * Return a {@link Transformer} that will cause a key/value pair to be
+     * "removed" if the value is described by the provided {@code adjective}.
+     * <p>
+     * Removal is accomplished by returning an empty map for the transformation.
+     * </p>
      * 
-     * @return the transformer
+     * @param adjective
+     * @return the {@link Transformer}
+     * @deprecated use {@link #valueRemoveIf(Adjective) instead}
+     */
+    @Deprecated
+    public static Transformer removeValuesThatAre(Adjective adjective) {
+        return valueRemoveIf(adjective);
+    }
+
+    /**
+     * Return a {@link Transformer} that will cause a key/value pair to be
+     * "removed" if the value is described by the provided {@code adjective}.
+     * <p>
+     * Removal is accomplished by returning an empty map for the transformation.
+     * </p>
+     * 
+     * @param adjective
+     * @return the {@link Transformer}
+     */
+    public static Transformer valueRemoveIf(Adjective adjective) {
+        return (key, value) -> adjective.describes(value) ? ImmutableMap.of()
+                : null;
+    }
+
+    /**
+     * Return a {@link Transformer} that, For EVERY key, transform values to a
+     * {@link Boolean} if possible. If the value cannot be transformed, an
+     * exception is thrown.
+     * 
+     * @return the {@link Transformer}
      */
     public static Transformer valueAsBoolean() {
         return (key, value) -> {
@@ -269,10 +443,38 @@ public final class Transformers {
     }
 
     /**
-     * Transform values to a {@link Number} if possible. If the value cannot be
-     * transformed, an exception is thrown.
+     * Return a {@link Transformer} that, for each of the {@code keys},
+     * transform values to a {@link Boolean} if possible. If the value cannot
+     * be transformed, an exception is thrown. If {@code keys} is an empty
+     * array, this transformation is applied to EVERY key (a la
+     * {@link #valueAsBoolean()}.
      * 
-     * @return the transformer
+     * @param key the keys for which the transformer is applied
+     * @return the {@link Transformer}
+     */
+    public static Transformer valueAsBoolean(String... keys) {
+        if(keys.length == 0) {
+            return valueAsBoolean();
+        }
+        else {
+            Set<String> _keys = Arrays.stream(keys).collect(Collectors.toSet());
+            return (key, value) -> {
+                if(_keys.contains(key)) {
+                    return valueAsBoolean().transform(key, value);
+                }
+                else {
+                    return null;
+                }
+            };
+        }
+    }
+
+    /**
+     * Return a {@link Transformer} that, For EVERY key, transform values to a
+     * {@link Number} if possible. If the value cannot be transformed, an
+     * exception is thrown.
+     * 
+     * @return the {@link Transformer}
      */
     public static Transformer valueAsNumber() {
         return (key, value) -> {
@@ -293,11 +495,39 @@ public final class Transformers {
     }
 
     /**
-     * Transform values to a
-     * {@link Convert#stringToResolvableLinkInstruction(String) resolvable link
-     * instruction}.
+     * Return a {@link Transformer} that, for each of the {@code keys},
+     * transform values to a {@link Number} if possible. If the value cannot
+     * be transformed, an exception is thrown. If {@code keys} is an empty
+     * array, this transformation is applied to EVERY key (a la
+     * {@link #valueAsNumber()}.
      * 
-     * @return the transformer
+     * @param key the keys for which the transformer is applied
+     * @return the {@link Transformer}
+     */
+    public static Transformer valueAsNumber(String... keys) {
+        if(keys.length == 0) {
+            return valueAsNumber();
+        }
+        else {
+            Set<String> _keys = Arrays.stream(keys).collect(Collectors.toSet());
+            return (key, value) -> {
+                if(_keys.contains(key)) {
+                    return valueAsNumber().transform(key, value);
+                }
+                else {
+                    return null;
+                }
+            };
+        }
+    }
+
+    /**
+     * Return a {@link Transformer} that, For EVERY key, transform values to a
+     * {@link Convert#stringToResolvableLinkInstruction(String) resolvable link
+     * instruction} if possible. If the value cannot be transformed, an
+     * exception is thrown.
+     * 
+     * @return the {@link Transformer}
      */
     public static Transformer valueAsResolvableLinkInstruction() {
         return (key, value) -> Transformation.to(key,
@@ -305,10 +535,41 @@ public final class Transformers {
     }
 
     /**
-     * Transform values to a {@link Tag} if possible. If the value cannot be
-     * transformed, an exception is thrown.
+     * Return a {@link Transformer} that, for each of the {@code keys},
+     * transform values to a
+     * {@link Convert#stringToResolvableLinkInstruction(String) resolvable link
+     * instruction} if possible. If the value cannot be transformed, an
+     * exception is thrown. If {@code keys} is an empty array, this
+     * transformation is applied to EVERY key (a la
+     * {@link #valueAsResolvableLinkInstruction()}.
      * 
-     * @return the transformer
+     * @param key the keys for which the transformer is applied
+     * @return the {@link Transformer}
+     */
+    public static Transformer valueAsResolvableLinkInstruction(String... keys) {
+        if(keys.length == 0) {
+            return valueAsResolvableLinkInstruction();
+        }
+        else {
+            Set<String> _keys = Arrays.stream(keys).collect(Collectors.toSet());
+            return (key, value) -> {
+                if(_keys.contains(key)) {
+                    return valueAsResolvableLinkInstruction().transform(key,
+                            value);
+                }
+                else {
+                    return null;
+                }
+            };
+        }
+    }
+
+    /**
+     * Return a {@link Transformer} that, For EVERY key, transform values to a
+     * {@link Number} if possible. If the value cannot be transformed, an
+     * exception is thrown.
+     * 
+     * @return the {@link Transformer}
      */
     public static Transformer valueAsTag() {
         return (key, value) -> {
@@ -322,10 +583,38 @@ public final class Transformers {
     }
 
     /**
-     * Transform values to a {@link Timestamp} if possible. If the value cannot
-     * be transformed, an exception is thrown.
+     * Return a {@link Transformer} that, for each of the {@code keys},
+     * transform values to a {@link Tag} if possible. If the value cannot
+     * be transformed, an exception is thrown. If {@code keys} is an empty
+     * array, this transformation is applied to EVERY key (a la
+     * {@link #valueAsTag()}.
      * 
-     * @return the transformer
+     * @param key the keys for which the transformer is applied
+     * @return the {@link Transformer}
+     */
+    public static Transformer valueAsTag(String... keys) {
+        if(keys.length == 0) {
+            return valueAsTag();
+        }
+        else {
+            Set<String> _keys = Arrays.stream(keys).collect(Collectors.toSet());
+            return (key, value) -> {
+                if(_keys.contains(key)) {
+                    return valueAsTag().transform(key, value);
+                }
+                else {
+                    return null;
+                }
+            };
+        }
+    }
+
+    /**
+     * Return a {@link Transformer} that, For EVERY key, transform values to a
+     * {@link Timestamp} if possible. If the value cannot be transformed, an
+     * exception is thrown.
+     * 
+     * @return the {@link Transformer}
      */
     public static Transformer valueAsTimestamp() {
         return (key, value) -> {
@@ -344,26 +633,48 @@ public final class Transformers {
     }
 
     /**
-     * Return a {@link Transformer} that will cause a key/value pair to be
-     * "removed" if the value is described by the provided {@code adjective}.
-     * <p>
-     * Removal is accomplished by returning an empty map for the transformation.
-     * </p>
+     * Return a {@link Transformer} that, for each of the {@code keys},
+     * transform values to a {@link Timestamp} if possible. If the value cannot
+     * be transformed, an exception is thrown. If {@code keys} is an empty
+     * array, this transformation is applied to EVERY key (a la
+     * {@link #valueAsTimestamp()}.
      * 
-     * @param adjective
-     * @return the transformer
+     * @param key the keys for which the transformer is applied
+     * @return the {@link Transformer}
      */
-    public static Transformer removeValuesThatAre(Adjective adjective) {
-        return (key, value) -> adjective.describes(value) ? ImmutableMap.of()
-                : null;
+    public static Transformer valueAsTimestamp(String... keys) {
+        if(keys.length == 0) {
+            return valueAsTimestamp();
+        }
+        else {
+            Set<String> _keys = Arrays.stream(keys).collect(Collectors.toSet());
+            return (key, value) -> {
+                if(_keys.contains(key)) {
+                    return valueAsTimestamp().transform(key, value);
+                }
+                else {
+                    return null;
+                }
+            };
+        }
     }
 
     /**
-     * Transform a value that is considered to be {@link Empty empty} to
-     * {@code null}.
+     * Return a {@link Transformer} that replaces a value with {@code null} it
+     * meets the default definition of {@link Empty}.
+     * 
+     * @return the {@link Transformer}
+     */
+    public static Transformer valueNullifyIfEmpty() {
+        return valueNullifyIfEmpty(Empty.ness());
+    }
+
+    /**
+     * Return a {@link Transformer} that replaces a value with {@code null} it
+     * meets the provided definition of {@link Empty empty}.
      * 
      * @param empty
-     * @return the transformer
+     * @return the {@link Transformer}
      */
     public static Transformer valueNullifyIfEmpty(Empty empty) {
         return (key, value) -> {
@@ -382,7 +693,7 @@ public final class Transformers {
      * 
      * @param delimiter the character on which to split the String
      * @param options the optional {@link SplitOption SplitOptions}
-     * @return the transformer
+     * @return the {@link Transformer}
      */
     public static Transformer valueSplitOnDelimiter(char delimiter,
             SplitOption... options) {
@@ -401,10 +712,12 @@ public final class Transformers {
     }
 
     /**
-     * Transform a string value to the proper java type using
-     * {@link Convert#stringToJava(String)}.
+     * Return a {@link Transformer} that uses the
+     * {@link Convert#stringToJava(String)} method to convert String values to
+     * the preferred java type. If the value is not a String, this transformer
+     * has no effect.
      * 
-     * @return the transformer
+     * @return the {@link Transformer}
      */
     public static Transformer valueStringToJava() {
         return (key, value) -> {
