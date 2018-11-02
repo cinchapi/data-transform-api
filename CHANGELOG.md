@@ -6,6 +6,7 @@
   * `keyStripInvalidChars` is deprecated in favor of `keyRemoveInvalidChars`
   * `keyValueStripQuotes` is deprecated in favor of `keyValueRemoveQuotes`
   * `removeValuesThatAre` is deprecated in favor of `valueRemoveIf`
+  * `valueSplitOnDelimiter` is deprecated in favor of `valueStringSplitOnDelimiter`
 * Added some factories for common `Transformers`
   * `keyEnsureCaseFormat` can be used to conver ALL keys to a particular case format.
   * `keyWhitespaceToUnderscore` replace all whitespace characters with underscores in ALL keys

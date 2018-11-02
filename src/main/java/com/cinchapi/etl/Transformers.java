@@ -694,8 +694,25 @@ public final class Transformers {
      * @param delimiter the character on which to split the String
      * @param options the optional {@link SplitOption SplitOptions}
      * @return the {@link Transformer}
+     * @deprecated use
+     *             {@link #valueStringSplitOnDelimiter(char, SplitOption...)}
+     *             instead
      */
+    @Deprecated
     public static Transformer valueSplitOnDelimiter(char delimiter,
+            SplitOption... options) {
+        return valueStringSplitOnDelimiter(delimiter, options);
+    }
+
+    /**
+     * Return a {@link Transformer} that splits a String value into multiple
+     * strings that are all mapped from the original key.
+     * 
+     * @param delimiter the character on which to split the String
+     * @param options the optional {@link SplitOption SplitOptions}
+     * @return the {@link Transformer}
+     */
+    public static Transformer valueStringSplitOnDelimiter(char delimiter,
             SplitOption... options) {
         return (key, value) -> {
             if(value instanceof String) {
