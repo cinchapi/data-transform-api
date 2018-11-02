@@ -61,8 +61,7 @@ public class CompositeTransformerTest {
     @Test
     public void testTransformObjectWithTransformationsToNavigableKeys() {
         Transformer transformer = Transformers.compose(
-                Transformers
-                        .keyStripInvalidChars(c -> !Character.isWhitespace(c)),
+                Transformers.keyRemoveInvalidChars(Character::isWhitespace),
                 Transformers.keyMap(ImmutableMap.of("Foo1", "foo.1.name",
                         "Foo1Description", "foo.1.description", "Foo2",
                         "foo.2.name", "Foo2Description", "foo.2.description")));
@@ -79,8 +78,7 @@ public class CompositeTransformerTest {
     @Test
     public void testTransformObjectWithTransformationsToNavigableKeysAndExplode() {
         Transformer transformer = Transformers.compose(
-                Transformers
-                        .keyStripInvalidChars(c -> !Character.isWhitespace(c)),
+                Transformers.keyRemoveInvalidChars(Character::isWhitespace),
                 Transformers.keyMap(ImmutableMap.of("Foo1", "foo.0.name",
                         "Foo1Description", "foo.0.description", "Foo2",
                         "foo.1.name", "Foo2Description", "foo.1.description")),
