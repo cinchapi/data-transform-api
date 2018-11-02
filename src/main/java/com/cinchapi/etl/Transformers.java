@@ -505,15 +505,20 @@ public final class Transformers {
      * @return the {@link Transformer}
      */
     public static Transformer valueAsNumber(String... keys) {
-        Set<String> _keys = Arrays.stream(keys).collect(Collectors.toSet());
-        return (key, value) -> {
-            if(_keys.contains(key)) {
-                return valueAsNumber().transform(key, value);
-            }
-            else {
-                return null;
-            }
-        };
+        if(keys.length == 0) {
+            return valueAsNumber();
+        }
+        else {
+            Set<String> _keys = Arrays.stream(keys).collect(Collectors.toSet());
+            return (key, value) -> {
+                if(_keys.contains(key)) {
+                    return valueAsNumber().transform(key, value);
+                }
+                else {
+                    return null;
+                }
+            };
+        }
     }
 
     /**
@@ -542,15 +547,21 @@ public final class Transformers {
      * @return the {@link Transformer}
      */
     public static Transformer valueAsResolvableLinkInstruction(String... keys) {
-        Set<String> _keys = Arrays.stream(keys).collect(Collectors.toSet());
-        return (key, value) -> {
-            if(_keys.contains(key)) {
-                return valueAsResolvableLinkInstruction().transform(key, value);
-            }
-            else {
-                return null;
-            }
-        };
+        if(keys.length == 0) {
+            return valueAsResolvableLinkInstruction();
+        }
+        else {
+            Set<String> _keys = Arrays.stream(keys).collect(Collectors.toSet());
+            return (key, value) -> {
+                if(_keys.contains(key)) {
+                    return valueAsResolvableLinkInstruction().transform(key,
+                            value);
+                }
+                else {
+                    return null;
+                }
+            };
+        }
     }
 
     /**
@@ -582,15 +593,20 @@ public final class Transformers {
      * @return the {@link Transformer}
      */
     public static Transformer valueAsTag(String... keys) {
-        Set<String> _keys = Arrays.stream(keys).collect(Collectors.toSet());
-        return (key, value) -> {
-            if(_keys.contains(key)) {
-                return valueAsTag().transform(key, value);
-            }
-            else {
-                return null;
-            }
-        };
+        if(keys.length == 0) {
+            return valueAsTag();
+        }
+        else {
+            Set<String> _keys = Arrays.stream(keys).collect(Collectors.toSet());
+            return (key, value) -> {
+                if(_keys.contains(key)) {
+                    return valueAsTag().transform(key, value);
+                }
+                else {
+                    return null;
+                }
+            };
+        }
     }
 
     /**
@@ -627,15 +643,20 @@ public final class Transformers {
      * @return the {@link Transformer}
      */
     public static Transformer valueAsTimestamp(String... keys) {
-        Set<String> _keys = Arrays.stream(keys).collect(Collectors.toSet());
-        return (key, value) -> {
-            if(_keys.contains(key)) {
-                return valueAsTimestamp().transform(key, value);
-            }
-            else {
-                return null;
-            }
-        };
+        if(keys.length == 0) {
+            return valueAsTimestamp();
+        }
+        else {
+            Set<String> _keys = Arrays.stream(keys).collect(Collectors.toSet());
+            return (key, value) -> {
+                if(_keys.contains(key)) {
+                    return valueAsTimestamp().transform(key, value);
+                }
+                else {
+                    return null;
+                }
+            };
+        }
     }
 
     /**
