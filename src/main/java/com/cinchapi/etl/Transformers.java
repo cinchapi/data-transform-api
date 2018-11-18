@@ -47,6 +47,10 @@ import com.google.common.collect.Maps;
 @SuppressWarnings("deprecation")
 public final class Transformers {
 
+    // NOTE: DO NOT redefine the order of the factory methods. Doing so will
+    // break any previously serialized incarnations of these transformers. When
+    // adding new transformers, add them to the end of the file.
+
     /**
      * Return a {@link CompositeTransformer} that invokes each of the
      * {@code transformers} in order.
