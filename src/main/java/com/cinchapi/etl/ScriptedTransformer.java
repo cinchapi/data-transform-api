@@ -18,6 +18,7 @@ package com.cinchapi.etl;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
@@ -54,14 +55,14 @@ import com.google.common.collect.ImmutableMap;
  *
  * @author Jeff Nelson
  */
-public class ScriptedTransformer implements Transformer {
+public class ScriptedTransformer implements Transformer, Serializable {
+
+    private static final long serialVersionUID = 1596575180656202243L;
 
     /**
      * Reference to the {@link ScriptEngineManager}.
      */
     private static final ScriptEngineManager sem = new ScriptEngineManager();
-
-    private static final long serialVersionUID = 1;
 
     /**
      * Return a builder that will create a {@link ScriptedTransformer} that uses

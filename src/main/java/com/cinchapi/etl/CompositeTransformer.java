@@ -39,8 +39,6 @@ import com.google.common.collect.Maps;
  */
 class CompositeTransformer implements Transformer {
 
-    private static final long serialVersionUID = 4458154051931742733L;
-
     /**
      * Apply the {@code transformer} to each key/value mapping within the
      * {@code object}. While doing so, use the {@code current} transformation
