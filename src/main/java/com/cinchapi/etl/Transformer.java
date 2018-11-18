@@ -15,6 +15,7 @@
  */
 package com.cinchapi.etl;
 
+import java.io.Serializable;
 import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -41,11 +42,23 @@ import com.google.common.collect.Maps;
  * simple integer</li>
  * <li>Constructing a link or resolvable link</li>
  * </ul>
+ * <h1>Serializability</h1>
+ * <p>
+ * Transformers can be serialized using the built-in Java serialization
+ * protocol. This allows {@link Transformers#compose(Transformer...) composite}
+ * transformers that use built-in {@link Transformers} to be serialized and
+ * passed between JVMs. Because serialization requires the transformer logic to
+ * be present in well-defined cases, default serialization doesn't work for
+ * custom transformers. To serialize custom transformation logic, please
+ * implemented the custom logic as a {@link ScriptedTransformer}.
+ * </p>
  * 
  * @author Jeff Nelson
  */
 @FunctionalInterface
-public interface Transformer {
+public interface Transformer extends Serializable {
+
+    public static long serialVersionUID = 1;
 
     /**
      * Potentially transform one or both of the {@code key}/{@code value} pair.
