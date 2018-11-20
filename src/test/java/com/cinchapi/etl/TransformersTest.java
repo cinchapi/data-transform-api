@@ -15,6 +15,10 @@
  */
 package com.cinchapi.etl;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
@@ -24,7 +28,9 @@ import org.junit.Test;
 import com.cinchapi.common.collect.AnyMaps;
 import com.cinchapi.common.describe.Empty;
 import com.cinchapi.concourse.Tag;
+import com.cinchapi.concourse.Timestamp;
 import com.cinchapi.concourse.util.Random;
+import com.cinchapi.concourse.util.Resources;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
@@ -147,6 +153,16 @@ public class TransformersTest {
         Map<String, Object> expected = AnyMaps.create("foo", null);
         Map<String, Object> actual = transformer.transform(expected);
         Assert.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testDeserialization() throws IOException {
+        ByteBuffer bytes = ByteBuffer.wrap(Files.readAllBytes(
+                Paths.get(Resources.getAbsolutePath("/sample.tfrm"))));
+        Transformer transformer = Transformer.deserialize(bytes);
+        Map<String, Object> actual = transformer.transform("foo", 1);
+        Assert.assertEquals(ImmutableMap.of("FooBar", Timestamp.fromMicros(1)),
+                actual);
     }
 
 }

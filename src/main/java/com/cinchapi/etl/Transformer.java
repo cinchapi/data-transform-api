@@ -15,16 +15,22 @@
  */
 package com.cinchapi.etl;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.file.Paths;
 import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import javax.annotation.Nullable;
 
 import com.cinchapi.common.collect.AnyMaps;
 import com.cinchapi.common.collect.MergeStrategies;
+import com.cinchapi.concourse.util.ByteBuffers;
+import com.google.common.base.CaseFormat;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
+import com.google.common.io.Files;
 
 /**
  * A {@link Transformer} is a routine that takes a key/value pair and
@@ -46,6 +52,49 @@ import com.google.common.collect.Maps;
  */
 @FunctionalInterface
 public interface Transformer {
+
+    /**
+     * Deserialize and return a {@link Transformer} from {@code bytes}.
+     * 
+     * @param bytes
+     * @return the deserialized {@link Transformer}
+     */
+    public static Transformer deserialize(ByteBuffer bytes) {
+        return TransformerSerializationFactory.instance().deserialize(bytes);
+    }
+
+    /**
+     * Serialize a {@link Transformer} and return the serialized form as a
+     * {@link ByteBuffer}.
+     * <p>
+     * In general, a {@link Transformer} is only serializable if it implements
+     * the {@link Serializable} interface. While special logic is implemented to
+     * make built-in transformers provided in the {@link Transformers} factory
+     * serializable, most custom impelementations won't be serializable because
+     * {@link Transformer} is a functional interface. If serializability is
+     * required, the custom logic should be implemented as a
+     * {@link ScriptedTransformer}.
+     * </p>
+     * 
+     * @param transformer
+     * @return the serialized form of the {@code transformer}
+     */
+    public static ByteBuffer serialize(Transformer transformer) {
+        return TransformerSerializationFactory.instance()
+                .serialize(transformer);
+    }
+
+    public static void main(String... args) throws IOException {
+        String script = "var cf = Java.type('" + CaseFormat.class.getName()
+                + "'); transformers.compose(transformers.keyEnsureCaseFormat(cf.UPPER_CAMEL)).transform(key, value);";
+        Transformer t1 = ScriptedTransformer.usingJavascript().interpret(script)
+                .build();
+        Transformer t = Transformers.compose(
+                Transformers.keyMap(ImmutableMap.of("foo", "foo_bar")),
+                Transformers.valueAsTimestamp(), t1);
+        ByteBuffer bytes = Transformer.serialize(t);
+        Files.write(ByteBuffers.toByteArray(bytes), Paths.get("/Users/jeff/ser").toFile());
+    }
 
     /**
      * Potentially transform one or both of the {@code key}/{@code value} pair.
