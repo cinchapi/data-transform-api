@@ -6,7 +6,7 @@
   * All built-in transformers provided in the `Transformers` factory class are serializable.
   * `ScriptedTransformer`s are serializable.
   * A `CompositeTransformer` can be serialized if all of the composed transformers can be serailized.
-Custom transformers that require serialization should be implemented using the `ScriptedTransformer` framework.
+  * Custom transformers that require serialization should be implemented using the `ScriptedTransformer` framework.
 * Added `Transformer#serialize` and `Transformer#deserialize` static methods.
   
 
