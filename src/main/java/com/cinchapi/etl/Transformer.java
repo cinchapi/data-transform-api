@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2017 Cinchapi Inc.
+ * Copyright (c) 2013-2018 Cinchapi Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,7 @@
  */
 package com.cinchapi.etl;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.Paths;
 import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -25,12 +23,8 @@ import javax.annotation.Nullable;
 
 import com.cinchapi.common.collect.AnyMaps;
 import com.cinchapi.common.collect.MergeStrategies;
-import com.cinchapi.concourse.util.ByteBuffers;
-import com.google.common.base.CaseFormat;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
-import com.google.common.io.Files;
 
 /**
  * A {@link Transformer} is a routine that takes a key/value pair and
