@@ -31,6 +31,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.cinchapi.common.base.CheckedExceptions;
@@ -38,6 +39,7 @@ import com.cinchapi.common.base.Verify;
 import com.cinchapi.common.io.ByteBuffers;
 import com.cinchapi.common.reflect.Reflection;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.primitives.Ints;
 
 /**
@@ -48,6 +50,11 @@ import com.google.common.primitives.Ints;
 final class TransformerSerializationFactory {
 
     /**
+     * Singleton.
+     */
+    private static TransformerSerializationFactory INSTANCE = new TransformerSerializationFactory();
+
+    /**
      * Return the instance of the {@link TransformerSerializationFactory}.
      * 
      * @return the instance of TransformerSerializationFactory
@@ -55,13 +62,6 @@ final class TransformerSerializationFactory {
     public static TransformerSerializationFactory instance() {
         return INSTANCE;
     }
-
-    /**
-     * Singleton.
-     */
-    private static TransformerSerializationFactory INSTANCE = new TransformerSerializationFactory();
-
-    private TransformerSerializationFactory() {}
 
     /**
      * Serialize the {@code object} into a {@link ByteBuffer}.
@@ -104,6 +104,20 @@ final class TransformerSerializationFactory {
             throw CheckedExceptions.wrapAsRuntimeException(e);
         }
     }
+
+    /**
+     * A mapping from a method name in {@link Transformers} to the {@link Class}
+     * object from the lamba it provides. This is a cache to facilitate faster
+     * lookups in the {@link #serialize(Transformer)} method.
+     * <p>
+     * NOTE: The class name for lambda is generated at runtime, so this state is
+     * intentionally kept local to this instance of the factory.
+     * </p>
+     */
+    private final Map<String, Class<? extends Transformer>> lambdas = Maps
+            .newHashMap();
+
+    private TransformerSerializationFactory() {}
 
     /**
      * Deserialize the {@link Transformer} from the {@code bytes} and return it.
@@ -180,9 +194,15 @@ final class TransformerSerializationFactory {
                         .collect(Collectors.toList());
                 Method method = null;
                 for (Method candidate : candidates) {
-                    Transformer t = (Transformer) candidate.invoke(null,
-                            params);
-                    if(t.getClass().equals(transformer.getClass())) {
+                    Class<? extends Transformer> clazz = lambdas
+                            .get(candidate.getName());
+                    if(clazz == null) {
+                        Transformer t = (Transformer) candidate.invoke(null,
+                                params);
+                        clazz = t.getClass();
+                        lambdas.put(candidate.getName(), clazz);
+                    }
+                    if(clazz.equals(transformer.getClass())) {
                         method = candidate;
                         break;
                     }

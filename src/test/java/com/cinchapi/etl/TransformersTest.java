@@ -31,6 +31,7 @@ import com.cinchapi.concourse.Tag;
 import com.cinchapi.concourse.Timestamp;
 import com.cinchapi.concourse.util.Random;
 import com.cinchapi.concourse.util.Resources;
+import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
@@ -163,6 +164,27 @@ public class TransformersTest {
         Map<String, Object> actual = transformer.transform("foo", 1);
         Assert.assertEquals(ImmutableMap.of("FooBar", Timestamp.fromMicros(1)),
                 actual);
+    }
+
+    @Test
+    public void testSerializationCache() {
+        Transformer t = Transformers
+                .keyRemoveInvalidChars(Predicates.equalTo('.'));
+        ByteBuffer bytes = Transformer.serialize(t);
+        bytes = Transformer.serialize(t);
+        t = Transformer.deserialize(bytes);
+        Assert.assertEquals(ImmutableMap.of("ab", 1), t.transform("a.b", 1));
+    }
+
+    @Test
+    public void testSerializationRoundTrips() {
+        Transformer t;
+        ByteBuffer bytes;
+        t = Transformers.explode();
+        bytes = Transformer.serialize(t);
+        t = Transformer.deserialize(bytes);
+        Assert.assertEquals(ImmutableMap.of("a", ImmutableMap.of("b", 1)),
+                t.transform("a.b", 1));
     }
 
 }
