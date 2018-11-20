@@ -84,18 +84,6 @@ public interface Transformer {
                 .serialize(transformer);
     }
 
-    public static void main(String... args) throws IOException {
-        String script = "var cf = Java.type('" + CaseFormat.class.getName()
-                + "'); transformers.compose(transformers.keyEnsureCaseFormat(cf.UPPER_CAMEL)).transform(key, value);";
-        Transformer t1 = ScriptedTransformer.usingJavascript().interpret(script)
-                .build();
-        Transformer t = Transformers.compose(
-                Transformers.keyMap(ImmutableMap.of("foo", "foo_bar")),
-                Transformers.valueAsTimestamp(), t1);
-        ByteBuffer bytes = Transformer.serialize(t);
-        Files.write(ByteBuffers.toByteArray(bytes), Paths.get("/Users/jeff/ser").toFile());
-    }
-
     /**
      * Potentially transform one or both of the {@code key}/{@code value} pair.
      * If no transformation should occur, it is acceptable to return
