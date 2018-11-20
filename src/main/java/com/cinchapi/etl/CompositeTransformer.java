@@ -15,17 +15,25 @@
  */
 package com.cinchapi.etl;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import javax.annotation.Nullable;
-
+import com.cinchapi.common.base.CheckedExceptions;
 import com.cinchapi.common.collect.AnyMaps;
 import com.cinchapi.common.collect.MergeStrategies;
+import com.cinchapi.common.reflect.Reflection;
+import com.cinchapi.concourse.util.ByteBuffers;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 /**
@@ -34,10 +42,18 @@ import com.google.common.collect.Maps;
  * <p>
  * Each of the composing Transformers is applied in declaration order.
  * </p>
+ * <h1>Serializability</h1>
+ * <p>
+ * A {@link CompositedTransformer} can be
+ * {@link Transformer#serialize(Transformer) serialized} if an only if all of
+ * the transformers being composed can be serialized.
+ * </p>
  * 
  * @author Jeff Nelson
  */
-class CompositeTransformer implements Transformer {
+class CompositeTransformer implements Transformer, Serializable {
+
+    private static final long serialVersionUID = 1759080269596158582L;
 
     /**
      * Apply the {@code transformer} to each key/value mapping within the
@@ -137,6 +153,47 @@ class CompositeTransformer implements Transformer {
             }
         }
         return transformed;
+    }
+
+    /**
+     * Deserialize this object from the {@code in} stream.
+     * 
+     * @param in
+     * @throws IOException
+     * @throws ClassNotFoundException
+     */
+    private void readObject(ObjectInputStream in)
+            throws IOException, ClassNotFoundException {
+        Reflection.set("transformers", Lists.newArrayList(), this);
+        int count = in.readInt();
+        for (int i = 0; i < count; ++i) {
+            int size = in.readInt();
+            byte[] bytes = new byte[size];
+            in.readFully(bytes);
+            Transformer transformer = Transformer
+                    .deserialize(ByteBuffer.wrap(bytes));
+            transformers.add(transformer);
+        }
+    }
+
+    /**
+     * Serialize this object to the {@code out} stream.
+     * 
+     * @param out
+     * @throws IOException
+     */
+    private void writeObject(ObjectOutputStream out) throws IOException {
+        out.writeInt(transformers.size());
+        transformers.forEach(transformer -> {
+            try {
+                ByteBuffer bytes = Transformer.serialize(transformer);
+                out.writeInt(bytes.remaining());
+                out.write(ByteBuffers.toByteArray(bytes));
+            }
+            catch (IOException e) {
+                throw CheckedExceptions.wrapAsRuntimeException(e);
+            }
+        });
     }
 
 }
