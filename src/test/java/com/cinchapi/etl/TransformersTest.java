@@ -186,5 +186,14 @@ public class TransformersTest {
         Assert.assertEquals(ImmutableMap.of("a", ImmutableMap.of("b", 1)),
                 t.transform("a.b", 1));
     }
+    
+    @Test
+    public void testSerializeNestedTransformer() {
+        Transformer t = Transformers.nullSafe(Transformers.explode());
+        ByteBuffer bytes = Transformer.serialize(t);
+        t = Transformer.deserialize(bytes);
+        Assert.assertEquals(ImmutableMap.of("a", ImmutableMap.of("b", 1)),
+                t.transform("a.b", 1));
+    }
 
 }

@@ -143,7 +143,19 @@ final class TransformerSerializationFactory {
                 int paramSize = bytes.getInt();
                 byte[] paramBytes = new byte[paramSize];
                 bytes.get(paramBytes);
-                Object param = getSerializedObject(ByteBuffer.wrap(paramBytes));
+                Object param;
+                try {
+                    param = getSerializedObject(ByteBuffer.wrap(paramBytes));
+                }
+                catch (Exception e) {
+                    // Assume that the param used a different serialization
+                    // technique...Right now, the only alternative that is
+                    // supported is using this factory to serialize nested
+                    // Transformer params. In the future, we may want to support
+                    // more, in which case it'd be necessary to add a prefix to
+                    // the byte stream indicating the path we took.
+                    param = deserialize(ByteBuffer.wrap(paramBytes));
+                }
                 params.add(param);
             }
             return Reflection.callStatic(Transformers.class, name,
@@ -225,7 +237,9 @@ final class TransformerSerializationFactory {
                      * - objectSize (4 bytes)
                      * - object (objectSize byes)
                      */
-                    ByteBuffer buf = getSerializedBytes(param);
+                    ByteBuffer buf = param instanceof Transformer
+                            ? serialize((Transformer) param)
+                            : getSerializedBytes(param);
                     baos.write(Ints.toByteArray(buf.remaining()));
                     baos.write(ByteBuffers.getByteArray(buf));
                 }
