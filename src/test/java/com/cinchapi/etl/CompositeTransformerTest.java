@@ -30,6 +30,7 @@ import com.google.common.collect.ImmutableMap;
  */
 public class CompositeTransformerTest {
 
+    @SuppressWarnings("deprecation")
     @Test
     public void testCase1() {
         Transformer transformer = Transformers.composeForEach(

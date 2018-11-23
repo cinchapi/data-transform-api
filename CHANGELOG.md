@@ -1,5 +1,15 @@
 # Changelog
 
+#### Version 1.3.0 (November 23, 2018)
+* Added the `ScriptedTransformer` framework. `ScriptedTransformer` is abstract class that can be extended to provide transformation logic via a script that is compatible with the Java script engine platform. Right now, javascript is the supported language for writing transformer scripts.
+* Added support for Transformer serialization. The rules of serialization are:
+  * All built-in transformers provided in the `Transformers` factory class are serializable.
+  * `ScriptedTransformer`s are serializable.
+  * A `CompositeTransformer` can be serialized if all of the composed transformers can be serailized.
+  * Custom transformers that require serialization should be implemented using the `ScriptedTransformer` framework.
+* Added `Transformer#serialize` and `Transformer#deserialize` static methods.
+  
+
 #### Version 1.2.0 (November 2, 2018)
 * Deprecated and renamed a few `Transformer` factories for better consistency
   * `keyCaseFormat` is deprecated in favor of `keyConditionalConvertCaseFormat` or `keyEnsureCaseFormat`

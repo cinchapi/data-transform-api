@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2017 Cinchapi Inc.
+ * Copyright (c) 2013-2018 Cinchapi Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,10 @@
  */
 package com.cinchapi.etl;
 
+import java.nio.ByteBuffer;
 import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import javax.annotation.Nullable;
 
 import com.cinchapi.common.collect.AnyMaps;
@@ -46,6 +46,37 @@ import com.google.common.collect.Maps;
  */
 @FunctionalInterface
 public interface Transformer {
+
+    /**
+     * Deserialize and return a {@link Transformer} from {@code bytes}.
+     * 
+     * @param bytes
+     * @return the deserialized {@link Transformer}
+     */
+    public static Transformer deserialize(ByteBuffer bytes) {
+        return TransformerSerializationFactory.instance().deserialize(bytes);
+    }
+
+    /**
+     * Serialize a {@link Transformer} and return the serialized form as a
+     * {@link ByteBuffer}.
+     * <p>
+     * In general, a {@link Transformer} is only serializable if it implements
+     * the {@link Serializable} interface. While special logic is implemented to
+     * make built-in transformers provided in the {@link Transformers} factory
+     * serializable, most custom impelementations won't be serializable because
+     * {@link Transformer} is a functional interface. If serializability is
+     * required, the custom logic should be implemented as a
+     * {@link ScriptedTransformer}.
+     * </p>
+     * 
+     * @param transformer
+     * @return the serialized form of the {@code transformer}
+     */
+    public static ByteBuffer serialize(Transformer transformer) {
+        return TransformerSerializationFactory.instance()
+                .serialize(transformer);
+    }
 
     /**
      * Potentially transform one or both of the {@code key}/{@code value} pair.
