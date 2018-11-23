@@ -206,6 +206,7 @@ final class TransformerSerializationFactory {
                         .collect(Collectors.toList());
                 Method method = null;
                 for (Method candidate : candidates) {
+                    candidate.setAccessible(true);
                     Class<? extends Transformer> clazz = lambdas
                             .get(candidate.getName());
                     if(clazz == null) {
