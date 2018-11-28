@@ -69,7 +69,7 @@ repositories {
 }
 
 dependencies {
-    compile group: 'com.cinchapi', name: 'accent4j', version: '1.4.0', changing:true
+    compile group: 'com.cinchapi', name: 'accent4j', version: '1.6.0-SNAPSHOT', changing:true
     compile group: 'com.cinchapi', name: 'concourse-driver-java', version: concourseVersion, changing:true // needed for util classes...
     compile group: 'com.google.code.findbugs', name: 'jsr305', version:'2.0.1'
     compile group: 'com.google.guava', name:'guava', version:'25.1-jre'

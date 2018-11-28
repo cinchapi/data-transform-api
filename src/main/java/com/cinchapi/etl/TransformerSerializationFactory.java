@@ -209,15 +209,20 @@ final class TransformerSerializationFactory {
                     candidate.setAccessible(true);
                     Class<? extends Transformer> clazz = lambdas
                             .get(candidate.getName());
-                    if(clazz == null) {
-                        Transformer t = (Transformer) candidate.invoke(null,
-                                params);
-                        clazz = t.getClass();
-                        lambdas.put(candidate.getName(), clazz);
+                    try {
+                        if(clazz == null) {
+                            Transformer t = (Transformer) candidate.invoke(null,
+                                    params);
+                            clazz = t.getClass();
+                            lambdas.put(candidate.getName(), clazz);
+                        }
+                        if(clazz.equals(transformer.getClass())) {
+                            method = candidate;
+                            break;
+                        }
                     }
-                    if(clazz.equals(transformer.getClass())) {
-                        method = candidate;
-                        break;
+                    catch (IllegalArgumentException e) {
+                        continue;
                     }
                 }
                 Verify.that(method != null,
