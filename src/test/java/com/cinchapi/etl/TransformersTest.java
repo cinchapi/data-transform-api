@@ -185,14 +185,32 @@ public class TransformersTest {
         t = Transformer.deserialize(bytes);
         Assert.assertEquals(ImmutableMap.of("a", ImmutableMap.of("b", 1)),
                 t.transform("a.b", 1));
-        
+
         t = Transformers.valueAsBoolean("b");
         bytes = Transformer.serialize(t);
         t = Transformer.deserialize(bytes);
-        Assert.assertEquals(ImmutableMap.of("b",true),
+        Assert.assertEquals(ImmutableMap.of("b", true),
                 t.transform("b", (Object) "true"));
+
+        t = Transformers.valueAsBoolean();
+        bytes = Transformer.serialize(t);
+        t = Transformer.deserialize(bytes);
+        Assert.assertEquals(ImmutableMap.of("b", true),
+                t.transform("b", (Object) "true"));
+
+        t = Transformers.valueAsNumber("b");
+        bytes = Transformer.serialize(t);
+        t = Transformer.deserialize(bytes);
+        Assert.assertEquals(ImmutableMap.of("b", 1),
+                t.transform("b", (Object) "1"));
+
+        t = Transformers.valueAsTimestamp();
+        bytes = Transformer.serialize(t);
+        t = Transformer.deserialize(bytes);
+        Assert.assertEquals(ImmutableMap.of("b", Timestamp.fromMicros(1)),
+                t.transform("b", (Object) 1));
     }
-    
+
     @Test
     public void testSerializeNestedTransformer() {
         Transformer t = Transformers.nullSafe(Transformers.explode());
