@@ -189,8 +189,8 @@ public class TransformersTest {
         t = Transformers.valueAsBoolean("b");
         bytes = Transformer.serialize(t);
         t = Transformer.deserialize(bytes);
-        Assert.assertEquals(ImmutableMap.of("a", ImmutableMap.of("b", 1)),
-                t.transform("a.b", true));
+        Assert.assertEquals(ImmutableMap.of("b",true),
+                t.transform("b", (Object) "true"));
     }
     
     @Test
