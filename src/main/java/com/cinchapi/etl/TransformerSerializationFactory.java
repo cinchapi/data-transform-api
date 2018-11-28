@@ -142,7 +142,7 @@ final class TransformerSerializationFactory {
                     .filter(method -> method.getName().equals(key))
                     .count() == 1) {
                 // Don't cache overloaded methods because the associations
-                // between called method name and the lambda class would get
+                // between the called method name and the lambda class would get
                 // mixed up with the method that actually produces the lambda
                 return super.put(key, value);
             }
