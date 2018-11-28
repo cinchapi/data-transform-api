@@ -30,16 +30,20 @@ import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
 
 import com.cinchapi.common.base.CheckedExceptions;
 import com.cinchapi.common.base.Verify;
 import com.cinchapi.common.io.ByteBuffers;
 import com.cinchapi.common.reflect.Reflection;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.primitives.Ints;
 
 /**
@@ -61,6 +65,19 @@ final class TransformerSerializationFactory {
      */
     public static TransformerSerializationFactory instance() {
         return INSTANCE;
+    }
+
+    /**
+     * Return a list of potential factory methods that could produced a
+     * {@link Transformer} from the provided {@code params}.
+     * 
+     * @param params
+     * @return the potential factory methods
+     */
+    private static List<Method> getPotentialFactoryMethods(Object... params) {
+        return Arrays.stream(Transformers.class.getDeclaredMethods())
+                .filter(method -> Reflection.isCallableWith(method, params))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -114,8 +131,27 @@ final class TransformerSerializationFactory {
      * intentionally kept local to this instance of the factory.
      * </p>
      */
-    private final Map<String, Class<? extends Transformer>> lambdas = Maps
-            .newHashMap();
+    private final Map<String, Class<? extends Transformer>> lambdas = new HashMap<String, Class<? extends Transformer>>() {
+
+        private static final long serialVersionUID = -407507799832599951L;
+
+        @Override
+        public Class<? extends Transformer> put(String key,
+                Class<? extends Transformer> value) {
+            if(Arrays.stream(Transformers.class.getDeclaredMethods())
+                    .filter(method -> method.getName().equals(key))
+                    .count() == 1) {
+                // Don't cache overloaded methods because the associations
+                // between the called method name and the lambda class would get
+                // mixed up with the method that actually produces the lambda
+                return super.put(key, value);
+            }
+            else {
+                return null;
+            }
+        }
+
+    };
 
     private TransformerSerializationFactory() {}
 
@@ -199,26 +235,41 @@ final class TransformerSerializationFactory {
                 }
                 // Go through each of the Transformers factories and try to
                 // guess which method produced the #transformer
-                List<Method> candidates = Arrays
-                        .stream(Transformers.class.getDeclaredMethods())
-                        .filter(method -> Reflection.isCallableWith(method,
-                                params))
-                        .collect(Collectors.toList());
-                Method method = null;
-                for (Method candidate : candidates) {
-                    candidate.setAccessible(true);
-                    Class<? extends Transformer> clazz = lambdas
-                            .get(candidate.getName());
-                    if(clazz == null) {
-                        Transformer t = (Transformer) candidate.invoke(null,
-                                params);
-                        clazz = t.getClass();
-                        lambdas.put(candidate.getName(), clazz);
+                List<Method> candidates = getPotentialFactoryMethods(params);
+                Method method = getFactoryMethod(transformer, candidates,
+                        params);
+                if(method == null) {
+                    // Handle corner case of the factories take arrays as
+                    // parameters and convert them to collections
+                    boolean retry = false;
+                    for (int i = 0; i < params.length; ++i) {
+                        Object param = params[i];
+                        if(param instanceof Collection) {
+                            Class<?> type = null;
+                            Collection<?> cparam = (Collection<?>) param;
+                            for (Object item : cparam) {
+                                // Get the actual type of the collection to
+                                // create the array correctly
+                                type = type == null || item.getClass() == type
+                                        ? item.getClass()
+                                        : Reflection.getClosestCommonAncestor(
+                                                type, item.getClass());
+                            }
+                            Object[] array = (Object[]) java.lang.reflect.Array
+                                    .newInstance(type, cparam.size());
+                            Iterator<?> it = cparam.iterator();
+                            for (int j = 0; j < cparam.size(); ++j) {
+                                array[j] = it.next();
+                            }
+                            params[i] = array;
+                            retry = true;
+                        }
                     }
-                    if(clazz.equals(transformer.getClass())) {
-                        method = candidate;
-                        break;
-                    }
+                    candidates = retry ? getPotentialFactoryMethods(params)
+                            : candidates;
+                    method = retry
+                            ? getFactoryMethod(transformer, candidates, params)
+                            : method;
                 }
                 Verify.that(method != null,
                         "Cannot serialize transformer using technique "
@@ -255,6 +306,44 @@ final class TransformerSerializationFactory {
         serialized.put(bytes);
         serialized.flip();
         return serialized;
+    }
+
+    /**
+     * Return the factory method from amongst the {@code candidates} that
+     * produced the {@code transformer} using the provided {@code params}
+     * 
+     * @param transformer
+     * @param candidates
+     * @param params
+     * @return the factory method for the {@link Transformer}
+     * @throws ReflectiveOperationException
+     */
+    @Nullable
+    private Method getFactoryMethod(Transformer transformer,
+            List<Method> candidates, Object... params)
+            throws ReflectiveOperationException {
+        Method method = null;
+        for (Method candidate : candidates) {
+            candidate.setAccessible(true);
+            Class<? extends Transformer> clazz = lambdas
+                    .get(candidate.getName());
+            try {
+                if(clazz == null) {
+                    Transformer t = (Transformer) candidate.invoke(null,
+                            params);
+                    clazz = t.getClass();
+                    lambdas.put(candidate.getName(), clazz);
+                }
+                if(clazz.equals(transformer.getClass())) {
+                    method = candidate;
+                    break;
+                }
+            }
+            catch (IllegalArgumentException e) {
+                continue;
+            }
+        }
+        return method;
     }
 
     /**
