@@ -2,6 +2,7 @@
 
 #### Version 1.3.1 (TBD)
 * Fixed some bugs related to serializing and deserializing some built-in `Transformers`.
+* Added missing transformers to ensure values are handled as Strings.
 
 #### Version 1.3.0 (November 23, 2018)
 * Added the `ScriptedTransformer` framework. `ScriptedTransformer` is abstract class that can be extended to provide transformation logic via a script that is compatible with the Java script engine platform. Right now, javascript is the supported language for writing transformer scripts.

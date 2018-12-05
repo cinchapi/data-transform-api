@@ -127,6 +127,14 @@ public class TransformersTest {
         Object value = Iterables.getOnlyElement(transformed.values());
         Assert.assertTrue(value instanceof Tag);
     }
+    
+    @Test
+    public void testValueAsString() {
+        Map<String, Object> transformed = Transformers.valueAsString()
+                .transform("foo", (Object) 1);
+        Object value = Iterables.getOnlyElement(transformed.values());
+        Assert.assertTrue(value instanceof String);
+    }
 
     @Test
     public void testValueNullifyIfEmpty() {

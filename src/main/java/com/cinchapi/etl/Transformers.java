@@ -203,26 +203,6 @@ public final class Transformers {
     }
 
     /**
-     * Return a {@link Transformer} that replaces whitespace characters with an
-     * underscore in keys.
-     * 
-     * @return the {@link Transformer}
-     */
-    public static Transformer keyWhitespaceToUnderscore() {
-        return keyReplaceChars(ImmutableMap.of(' ', '_'));
-    }
-
-    /**
-     * Return a {@link Transformer} that removes all whitespace characters from
-     * a key.
-     * 
-     * @return the {@link Transformer}
-     */
-    public static Transformer keyRemoveWhitespace() {
-        return keyRemoveInvalidChars(Character::isWhitespace);
-    }
-
-    /**
      * Return a {@link Transformer} that removes all the character in the
      * {@code invalid} collection.
      * 
@@ -267,6 +247,16 @@ public final class Transformers {
                 return null;
             }
         };
+    }
+
+    /**
+     * Return a {@link Transformer} that removes all whitespace characters from
+     * a key.
+     * 
+     * @return the {@link Transformer}
+     */
+    public static Transformer keyRemoveWhitespace() {
+        return keyRemoveInvalidChars(Character::isWhitespace);
     }
 
     /**
@@ -367,6 +357,16 @@ public final class Transformers {
     }
 
     /**
+     * Return a {@link Transformer} that replaces whitespace characters with an
+     * underscore in keys.
+     * 
+     * @return the {@link Transformer}
+     */
+    public static Transformer keyWhitespaceToUnderscore() {
+        return keyReplaceChars(ImmutableMap.of(' ', '_'));
+    }
+
+    /**
      * Return a {@link Transformer} that does not perform any key or value
      * transformations.
      * 
@@ -388,10 +388,6 @@ public final class Transformers {
                 : null;
     }
 
-    public static Transformer valueRemoveIfEmpty() {
-        return valueRemoveIf(Empty.ness());
-    }
-
     /**
      * Return a {@link Transformer} that will cause a key/value pair to be
      * "removed" if the value is described by the provided {@code adjective}.
@@ -406,21 +402,6 @@ public final class Transformers {
     @Deprecated
     public static Transformer removeValuesThatAre(Adjective adjective) {
         return valueRemoveIf(adjective);
-    }
-
-    /**
-     * Return a {@link Transformer} that will cause a key/value pair to be
-     * "removed" if the value is described by the provided {@code adjective}.
-     * <p>
-     * Removal is accomplished by returning an empty map for the transformation.
-     * </p>
-     * 
-     * @param adjective
-     * @return the {@link Transformer}
-     */
-    public static Transformer valueRemoveIf(Adjective adjective) {
-        return (key, value) -> adjective.describes(value) ? ImmutableMap.of()
-                : null;
     }
 
     /**
@@ -565,6 +546,41 @@ public final class Transformers {
     }
 
     /**
+     * Return a {@link Transformer} that, for EVERY key, transforms values to a
+     * {@link String}.
+     * 
+     * @return the {@link Transformer}
+     */
+    public static Transformer valueAsString() {
+        return (key, value) -> value instanceof String ? null
+                : Transformation.to(key, value.toString());
+    }
+
+    /**
+     * Return a {@link Transformer} that, for the specified {@code key}as,
+     * transforms values to a {@link String}.
+     * 
+     * @param keys
+     * @return the {@link Transformer}
+     */
+    public static Transformer valueAsString(String... keys) {
+        if(keys.length == 0) {
+            return valueAsString();
+        }
+        else {
+            Set<String> _keys = Arrays.stream(keys).collect(Collectors.toSet());
+            return (key, value) -> {
+                if(_keys.contains(key)) {
+                    return valueAsString().transform(key, value);
+                }
+                else {
+                    return null;
+                }
+            };
+        }
+    }
+
+    /**
      * Return a {@link Transformer} that, For EVERY key, transform values to a
      * {@link Number} if possible. If the value cannot be transformed, an
      * exception is thrown.
@@ -685,6 +701,25 @@ public final class Transformers {
                 return null;
             }
         };
+    }
+
+    /**
+     * Return a {@link Transformer} that will cause a key/value pair to be
+     * "removed" if the value is described by the provided {@code adjective}.
+     * <p>
+     * Removal is accomplished by returning an empty map for the transformation.
+     * </p>
+     * 
+     * @param adjective
+     * @return the {@link Transformer}
+     */
+    public static Transformer valueRemoveIf(Adjective adjective) {
+        return (key, value) -> adjective.describes(value) ? ImmutableMap.of()
+                : null;
+    }
+
+    public static Transformer valueRemoveIfEmpty() {
+        return valueRemoveIf(Empty.ness());
     }
 
     /**
