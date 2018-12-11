@@ -121,55 +121,6 @@ public final class Transformers {
     }
 
     /**
-     * Return a {@link Transformer} that applies the provided
-     * {@code transformer} throughout the entirety of a nested {@link Map} or to
-     * the value itself if it is not a {@link Map}.
-     * <p>
-     * NOTE: You should always wrap subsequent {@link Transformer transformers}
-     * within this this one when it is likely that the input values will be
-     * maps instead of "flat" objects. For instance, if you have a
-     * {@link #compose(Transformer...) composite} transformation chain and one
-     * of the transformers in the sequence is
-     * {@link #explode()}, you should wrap all
-     * the following transformers using this method to ensure that the logic is
-     * applied to each nested map.
-     * </p>
-     * 
-     * @param transformer
-     * @return the {@link Transformer}
-     */
-    @SuppressWarnings("unchecked")
-    public static Transformer nest(Transformer transformer) {
-        return (key, value) -> {
-            Map<String, Object> initial = transformer.transform(key, value);
-            initial = initial == null ? ImmutableMap.of(key, value) : initial;
-            Map<String, Object> nested = Maps.newLinkedHashMap();
-            initial.forEach((k, v) -> {
-                if(v instanceof Map) {
-                    Map<String, Object> map = (Map<String, Object>) v;
-                    map.forEach((_k, _v) -> {
-                        Map<String, Object> inner = nest(transformer)
-                                .transform(_k, _v);
-                        AnyMaps.mergeInPlace(nested,
-                                inner != null ? ImmutableMap.of(k, inner)
-                                        : ImmutableMap.of(k,
-                                                ImmutableMap.of(_k, _v)),
-                                MergeStrategies::concat);
-                    });
-                }
-                else if(Sequences.isSequence(v)) {
-                    Map<String, Object> forEach = forEach(nest(transformer))
-                            .transform(key, v);
-                    AnyMaps.mergeInPlace(nested,
-                            forEach != null ? forEach : ImmutableMap.of(key, v),
-                            MergeStrategies::concat);
-                }
-            });
-            return nested.isEmpty() ? initial : nested;
-        };
-    }
-
-    /**
      * Return a {@link Transformer} that converts keys {@code from} one case
      * format {@code to} another one.
      * 
@@ -413,6 +364,56 @@ public final class Transformers {
      */
     public static Transformer keyWhitespaceToUnderscore() {
         return keyReplaceChars(ImmutableMap.of(' ', '_'));
+    }
+
+    /**
+     * Return a {@link Transformer} that applies the provided
+     * {@code transformer} throughout the entirety of a nested {@link Map} or to
+     * the value itself if it is not a {@link Map}.
+     * <p>
+     * NOTE: You should always wrap subsequent {@link Transformer transformers}
+     * within this this one when it is likely that the input values will be
+     * maps instead of "flat" objects. For instance, if you have a
+     * {@link #compose(Transformer...) composite} transformation chain and one
+     * of the transformers in the sequence is
+     * {@link #explode()}, you should wrap all
+     * the following transformers using this method to ensure that the logic is
+     * applied to each nested map.
+     * </p>
+     * 
+     * @param transformer
+     * @return the {@link Transformer}
+     */
+    @SuppressWarnings("unchecked")
+    public static Transformer nest(Transformer transformer) {
+        return (key, value) -> {
+            Map<String, Object> initial = transformer.transform(key, value);
+            initial = initial == null ? AnyMaps.create(key, value) : initial;
+            Map<String, Object> nested = Maps.newLinkedHashMap();
+            initial.forEach((k, v) -> {
+                if(v instanceof Map) {
+                    Map<String, Object> map = (Map<String, Object>) v;
+                    map.forEach((_k, _v) -> {
+                        Map<String, Object> inner = nest(transformer)
+                                .transform(_k, _v);
+                        inner = Maps.newLinkedHashMap(inner);
+                        AnyMaps.mergeInPlace(nested,
+                                inner != null ? ImmutableMap.of(k, inner)
+                                        : ImmutableMap.of(k,
+                                                ImmutableMap.of(_k, _v)),
+                                MergeStrategies::upsert);
+                    });
+                }
+                else if(Sequences.isSequence(v)) {
+                    Map<String, Object> forEach = forEach(nest(transformer))
+                            .transform(key, v);
+                    AnyMaps.mergeInPlace(nested,
+                            forEach != null ? forEach : ImmutableMap.of(key, v),
+                            MergeStrategies::concat);
+                }
+            });
+            return nested.isEmpty() ? initial : nested;
+        };
     }
 
     /**
