@@ -31,6 +31,7 @@ import com.cinchapi.concourse.Tag;
 import com.cinchapi.concourse.Timestamp;
 import com.cinchapi.concourse.util.Random;
 import com.cinchapi.concourse.util.Resources;
+import com.google.common.base.CaseFormat;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
@@ -127,7 +128,7 @@ public class TransformersTest {
         Object value = Iterables.getOnlyElement(transformed.values());
         Assert.assertTrue(value instanceof Tag);
     }
-    
+
     @Test
     public void testValueAsString() {
         Map<String, Object> transformed = Transformers.valueAsString()
@@ -226,6 +227,16 @@ public class TransformersTest {
         t = Transformer.deserialize(bytes);
         Assert.assertEquals(ImmutableMap.of("a", ImmutableMap.of("b", 1)),
                 t.transform("a.b", 1));
+    }
+
+    @Test
+    public void testNestTransformer() {
+        Map<String, Object> data = ImmutableMap.of("myFriend.0.firstName",
+                "Jeff", "myFriend.0.lastName.family_name", "Nelson", "myFriend.1.firstName",
+                "John", "myFriend.1.lastName", "Doe");
+        Transformer t = Transformers.compose(Transformers.explode(), Transformers.nest(Transformers.keyEnsureCaseFormat(CaseFormat.UPPER_CAMEL)));
+        data = t.transform(data);
+        System.out.println(data);
     }
 
 }
