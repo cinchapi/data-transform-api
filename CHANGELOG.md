@@ -1,6 +1,9 @@
 # Changelog
 
-#### Version 1.3.1 (TBD)
+#### Version 1.4.0 (TBD)
+* Added `Transformers#nest` which takes another `Transformer` and applies it to each level of a nested data structure (e.g. `Map` or `Sequence`).
+
+#### Version 1.3.1 (December 5, 2018)
 * Fixed some bugs related to serializing and deserializing some built-in `Transformers`.
 * Added missing transformers to ensure values are handled as Strings.
 
