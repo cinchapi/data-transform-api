@@ -33,6 +33,7 @@ import com.cinchapi.concourse.util.Random;
 import com.cinchapi.concourse.util.Resources;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
@@ -232,11 +233,25 @@ public class TransformersTest {
     @Test
     public void testNestTransformer() {
         Map<String, Object> data = ImmutableMap.of("myFriend.0.firstName",
-                "Jeff", "myFriend.0.lastName.family_name", "Nelson", "myFriend.1.firstName",
-                "John", "myFriend.1.lastName", "Doe");
-        Transformer t = Transformers.compose(Transformers.explode(), Transformers.nest(Transformers.keyEnsureCaseFormat(CaseFormat.UPPER_CAMEL)));
+                "Jeff", "myFriend.0.lastName.family_name.0", "Nelson",
+                "myFriend.0.lastName.family_name.1", "Nelson",
+                "myFriend.1.firstName", "John", "myFriend.1.lastName", "Doe");
+        Transformer t = Transformers.compose(Transformers.explode(),
+                Transformers.nest(Transformers
+                        .keyEnsureCaseFormat(CaseFormat.UPPER_CAMEL)));
         data = t.transform(data);
+        Map<String, Object> expected = ImmutableMap
+                .of("MyFriend",
+                        ImmutableList.of(
+                                ImmutableMap.of("FirstName", "Jeff", "LastName",
+                                        ImmutableMap.of("FamilyName",
+                                                ImmutableList.of("Nelson",
+                                                        "Nelson"))),
+                                ImmutableMap.of("FirstName", "John", "LastName",
+                                        "Doe")));
         System.out.println(data);
+        System.out.println(expected);
+        Assert.assertEquals(expected, data);
     }
 
 }
