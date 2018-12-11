@@ -254,4 +254,13 @@ public class TransformersTest {
         Assert.assertEquals(expected, data);
     }
 
+    @Test
+    public void testCopy() {
+        Map<String, Object> data = ImmutableMap.of("a", "A", "b", "B");
+        Transformer t = Transformers.compose(Transformers.copy("a", "c"));
+        data = t.transform(data);
+        Assert.assertEquals(ImmutableMap.of("a", "A", "b", "B", "c", "A"),
+                data);
+    }
+
 }

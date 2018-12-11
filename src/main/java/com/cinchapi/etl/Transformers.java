@@ -73,6 +73,28 @@ public final class Transformers {
     }
 
     /**
+     * Return a {@link Transformer} that copies that value associated with
+     * {@code fromKey} to {@code toKey}.
+     * 
+     * @param fromKey
+     * @param toKey
+     * @return the {@link Transformer}
+     */
+    public static Transformer copy(String fromKey, String toKey) {
+        return (key, value) -> {
+            if(key.equals(fromKey)) {
+                Map<String, Object> transformed = Maps.newLinkedHashMap();
+                transformed.put(fromKey, value);
+                transformed.put(toKey, value);
+                return transformed;
+            }
+            else {
+                return null;
+            }
+        };
+    }
+
+    /**
      * Return a {@link Transformer} that explodes a {@code key}/{@code value}
      * pair into a nested data structure.
      * 
