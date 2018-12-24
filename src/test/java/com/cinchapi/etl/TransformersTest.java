@@ -31,7 +31,9 @@ import com.cinchapi.concourse.Tag;
 import com.cinchapi.concourse.Timestamp;
 import com.cinchapi.concourse.util.Random;
 import com.cinchapi.concourse.util.Resources;
+import com.google.common.base.CaseFormat;
 import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
@@ -137,6 +139,14 @@ public class TransformersTest {
     }
 
     @Test
+    public void testValueAsString() {
+        Map<String, Object> transformed = Transformers.valueAsString()
+                .transform("foo", (Object) 1);
+        Object value = Iterables.getOnlyElement(transformed.values());
+        Assert.assertTrue(value instanceof String);
+    }
+
+    @Test
     public void testValueNullifyIfEmpty() {
         Map<String, Object> expected = Maps.newHashMap();
         expected.put("foo", null);
@@ -226,6 +236,48 @@ public class TransformersTest {
         t = Transformer.deserialize(bytes);
         Assert.assertEquals(ImmutableMap.of("a", ImmutableMap.of("b", 1)),
                 t.transform("a.b", 1));
+    }
+
+    @Test
+    public void testNestTransformer() {
+        Map<String, Object> data = ImmutableMap.of("myFriend.0.firstName",
+                "Jeff", "myFriend.0.lastName.family_name.0", "Nelson",
+                "myFriend.0.lastName.family_name.1", "Nelson",
+                "myFriend.1.firstName", "John", "myFriend.1.lastName", "Doe");
+        Transformer t = Transformers.compose(Transformers.explode(),
+                Transformers.nest(Transformers
+                        .keyEnsureCaseFormat(CaseFormat.UPPER_CAMEL)));
+        data = t.transform(data);
+        Map<String, Object> expected = ImmutableMap
+                .of("MyFriend",
+                        ImmutableList.of(
+                                ImmutableMap.of("FirstName", "Jeff", "LastName",
+                                        ImmutableMap.of("FamilyName",
+                                                ImmutableList.of("Nelson",
+                                                        "Nelson"))),
+                                ImmutableMap.of("FirstName", "John", "LastName",
+                                        "Doe")));
+        System.out.println(data);
+        System.out.println(expected);
+        Assert.assertEquals(expected, data);
+    }
+
+    @Test
+    public void testCopy() {
+        Map<String, Object> data = ImmutableMap.of("a", "A", "b", "B");
+        Transformer t = Transformers.compose(Transformers.copy("a", "c"));
+        data = t.transform(data);
+        Assert.assertEquals(ImmutableMap.of("a", "A", "b", "B", "c", "A"),
+                data);
+    }
+    
+    @Test
+    public void testSerializeTransformerWithDefaultEmptyDefinition() {
+        Transformer t = Transformers.valueRemoveIfEmpty();
+        ByteBuffer bytes = Transformer.serialize(t);
+        t = Transformer.deserialize(bytes);
+        Map<String, Object> data = t.transform(AnyMaps.create("a", null));
+        Assert.assertTrue(data.isEmpty());
     }
 
 }

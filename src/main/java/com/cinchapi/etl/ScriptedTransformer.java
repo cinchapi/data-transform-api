@@ -34,6 +34,7 @@ import com.cinchapi.common.base.Verify;
 import com.cinchapi.common.collect.AnyMaps;
 import com.cinchapi.common.collect.Association;
 import com.cinchapi.common.reflect.Reflection;
+import com.cinchapi.script.ScriptObjectMirrors;
 import com.google.common.collect.ImmutableMap;
 
 /**
@@ -79,6 +80,9 @@ public class ScriptedTransformer implements Transformer, Serializable {
      */
     private transient final ScriptEngine engine;
 
+    /**
+     * The name of the {@link ScriptEngine}.
+     */
     private final String engineName;
 
     /**
@@ -106,21 +110,7 @@ public class ScriptedTransformer implements Transformer, Serializable {
                 Association.of(ImmutableMap.of("key", key, "value", value)));
         try {
             Object result = engine.eval(script, bindings);
-            if(result instanceof Map) {
-                // The #result is probably actually an instance of JsObject
-                // which has a toString of [Object object]. In order to get the
-                // object's properties into a Java friendly Map format we must
-                // make a copy.
-                boolean isArray;
-                try {
-                    isArray = Reflection.call(result, "isArray");
-                }
-                catch (Exception e) {
-                    isArray = false;
-                }
-                result = isArray ? ((Map<String, Object>) result).values()
-                        : ImmutableMap.copyOf((Map<String, Object>) result);
-            }
+            result = ScriptObjectMirrors.javaify(result);
             if(result instanceof Map) {
                 return (Map<String, Object>) result;
             }
