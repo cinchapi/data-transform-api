@@ -1,5 +1,9 @@
 # Changelog
 
+#### Version 1.5.0 (TBD)
+* Deprecated `Transformers#keyMap` in favor of `Transformers#keyRename` because the latter is a better semantic representation of what the transformer actaually does.
+* Added `Transformers#keyRename` that takes a single `from` key and a single `to` key and performs the appropriate renaming.
+
 #### Version 1.4.0 (December 24, 2018)
 * Added `Transformers#nest` which takes another `Transformer` and applies it to each level of a nested data structure (e.g. `Map` or `Sequence`).
 * Added `Transformers#copy` which copies the value associated with one key and also associates it with another key.

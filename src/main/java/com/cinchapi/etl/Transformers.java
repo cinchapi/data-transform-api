@@ -211,17 +211,11 @@ public final class Transformers {
      * 
      * @param map
      * @return the {@link Transformer}
+     * @deprecated use {@link #keyRename(Map)} instead
      */
+    @Deprecated
     public static Transformer keyMap(Map<String, String> map) {
-        return (key, value) -> {
-            key = map.get(key);
-            if(key != null) {
-                return Transformation.to(key, value);
-            }
-            else {
-                return null;
-            }
-        };
+        return keyRename(map);
     }
 
     /**
@@ -279,6 +273,38 @@ public final class Transformers {
      */
     public static Transformer keyRemoveWhitespace() {
         return keyRemoveInvalidChars(Character::isWhitespace);
+    }
+
+    /**
+     * Return a {@link Transformer} that renames keys. The renaming rules are
+     * that each key in the provided {@code map} is renamed to its associated
+     * value.
+     * 
+     * @param map
+     * @return the {@link Transformer}
+     */
+    public static Transformer keyRename(Map<String, String> map) {
+        return (key, value) -> {
+            key = map.get(key);
+            if(key != null) {
+                return Transformation.to(key, value);
+            }
+            else {
+                return null;
+            }
+        };
+    }
+
+    /**
+     * Return a {@link Transformer} that renames key {@code from} to the
+     * specified {@code to} key.
+     * 
+     * @param from
+     * @param to
+     * @return the {@link Transformer}
+     */
+    public static Transformer keyRename(String from, String to) {
+        return keyRename(ImmutableMap.of(from, to));
     }
 
     /**
