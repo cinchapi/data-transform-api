@@ -749,7 +749,7 @@ public final class Transformers {
 
     /**
      * Return a {@link Transformer} that replaces a value with {@code null} it
-     * meets the default definition of {@link Empty}.
+     * meets the default definition of {@link Empty#ness()}.
      * 
      * @return the {@link Transformer}
      */
@@ -790,8 +790,23 @@ public final class Transformers {
                 : null;
     }
 
+    /**
+     * Return a {@link Transformer} that will caused a key/value pair to be
+     * "removed" if the value is described by the default definition of
+     * {@link Empty#ness() Empty}.
+     * <p>
+     * Removal is accomplished by returning an empty map for the transformation.
+     * </p>
+     * <p>
+     * NOTE: If the default definition of {@link Empty} changes, the behaviour
+     * of this {@link Transformer} will also change accordingly.
+     * </p>
+     * 
+     * @return the {@link Transformer}
+     */
     public static Transformer valueRemoveIfEmpty() {
-        return valueRemoveIf(Empty.ness());
+        return (key, value) -> Empty.ness().describes(value) ? ImmutableMap.of()
+                : null;
     }
 
     /**

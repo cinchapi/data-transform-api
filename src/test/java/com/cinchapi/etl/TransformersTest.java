@@ -262,5 +262,14 @@ public class TransformersTest {
         Assert.assertEquals(ImmutableMap.of("a", "A", "b", "B", "c", "A"),
                 data);
     }
+    
+    @Test
+    public void testSerializeTransformerWithDefaultEmptyDefinition() {
+        Transformer t = Transformers.valueRemoveIfEmpty();
+        ByteBuffer bytes = Transformer.serialize(t);
+        t = Transformer.deserialize(bytes);
+        Map<String, Object> data = t.transform(AnyMaps.create("a", null));
+        Assert.assertTrue(data.isEmpty());
+    }
 
 }

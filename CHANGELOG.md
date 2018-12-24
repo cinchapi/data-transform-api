@@ -1,8 +1,9 @@
 # Changelog
 
-#### Version 1.4.0 (TBD)
+#### Version 1.4.0 (December 24, 2018)
 * Added `Transformers#nest` which takes another `Transformer` and applies it to each level of a nested data structure (e.g. `Map` or `Sequence`).
 * Added `Transformers#copy` which copies the value associated with one key and also associates it with another key.
+* Fixed a bug in the `Transformers#valueRemoveIfEmpty` factory that caused the returned `Transformer` to fail serialization.
 
 #### Version 1.3.1 (December 5, 2018)
 * Fixed some bugs related to serializing and deserializing some built-in `Transformers`.
