@@ -139,14 +139,6 @@ public class TransformersTest {
     }
 
     @Test
-    public void testValueAsString() {
-        Map<String, Object> transformed = Transformers.valueAsString()
-                .transform("foo", (Object) 1);
-        Object value = Iterables.getOnlyElement(transformed.values());
-        Assert.assertTrue(value instanceof String);
-    }
-
-    @Test
     public void testValueNullifyIfEmpty() {
         Map<String, Object> expected = Maps.newHashMap();
         expected.put("foo", null);
