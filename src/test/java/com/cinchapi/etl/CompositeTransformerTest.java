@@ -28,9 +28,9 @@ import com.google.common.collect.ImmutableMap;
  *
  * @author Jeff Nelson
  */
+@SuppressWarnings("deprecation")
 public class CompositeTransformerTest {
 
-    @SuppressWarnings("deprecation")
     @Test
     public void testCase1() {
         Transformer transformer = Transformers.composeForEach(
