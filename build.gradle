@@ -50,7 +50,7 @@ artifacts {
 }
 
 // Set the version for all Concourse dependencies
-ext.concourseVersion = '0.9.4'
+ext.concourseVersion = '0.10.5'
 
 repositories {
     mavenCentral()
@@ -69,7 +69,7 @@ repositories {
 }
 
 dependencies {
-    compile group: 'com.cinchapi', name: 'accent4j', version: '1.6.0', changing:true
+    compile group: 'com.cinchapi', name: 'accent4j', version: '1.12.0', changing:true
     compile group: 'com.cinchapi', name: 'concourse-driver-java', version: concourseVersion, changing:true // needed for util classes...
     compile group: 'com.google.code.findbugs', name: 'jsr305', version:'2.0.1'
     compile group: 'com.google.guava', name:'guava', version:'25.1-jre'

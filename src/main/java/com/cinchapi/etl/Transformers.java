@@ -21,7 +21,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
+import com.cinchapi.common.base.AnyStrings;
 import com.cinchapi.common.base.CaseFormats;
+import com.cinchapi.common.base.SplitOption;
+import com.cinchapi.common.base.StringSplitter;
 import com.cinchapi.common.base.validate.Check;
 import com.cinchapi.common.collect.AnyMaps;
 import com.cinchapi.common.collect.Association;
@@ -32,9 +36,6 @@ import com.cinchapi.common.describe.Empty;
 import com.cinchapi.concourse.Tag;
 import com.cinchapi.concourse.Timestamp;
 import com.cinchapi.concourse.util.Convert;
-import com.cinchapi.concourse.util.SplitOption;
-import com.cinchapi.concourse.util.StringSplitter;
-import com.cinchapi.concourse.util.Strings;
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -378,12 +379,12 @@ public final class Transformers {
     public static Transformer keyValueRemoveQuotes() {
         return (key, value) -> {
             boolean modified = false;
-            if(Strings.isWithinQuotes(key)) {
+            if(AnyStrings.isWithinQuotes(key)) {
                 key = key.substring(1, key.length() - 1);
                 modified = true;
             }
             if(value instanceof String
-                    && Strings.isWithinQuotes((String) value)) {
+                    && AnyStrings.isWithinQuotes((String) value)) {
                 String str = (String) value;
                 value = str.substring(1, str.length() - 1);
                 modified = true;
@@ -561,7 +562,7 @@ public final class Transformers {
                 return null;
             }
             else {
-                Number number = Strings.tryParseNumber(value.toString());
+                Number number = AnyStrings.tryParseNumber(value.toString());
                 if(number != null) {
                     return Transformation.to(key, number);
                 }
