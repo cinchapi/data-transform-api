@@ -53,19 +53,39 @@ artifacts {
 ext.concourseVersion = '0.10.5'
 
 repositories {
-    mavenCentral()
-    maven {
-        url 'https://oss.sonatype.org/content/repositories/snapshots/'
+  mavenCentral()
+  maven {
+    url 'https://oss.sonatype.org/content/repositories/snapshots/'
+  }
+  maven {
+    url "https://dl.cloudsmith.io/public/cinchapi/open-source/maven/"
+  }
+  maven {
+    url "https://dl.cloudsmith.io/public/cinchapi/open-source-snapshots/maven/"
+  }
+  maven {
+    url "https://dl.cloudsmith.io/public/cinchapi/platform/maven/"
+  }
+  maven {
+    url "https://dl.cloudsmith.io/public/cinchapi/platform-snapshots/maven/"
+  }
+  maven {
+    url "https://dl.cloudsmith.io/public/cinchapi/3rdparty/maven/"
+  }
+  maven {
+    url "https://dl.cloudsmith.io/public/cinchapi/enterprise/maven/"
+    credentials {
+      username = System.getenv('CLOUDSMITH_API_USER')
+      password = System.getenv('CLOUDSMITH_API_KEY')
     }
-    maven {
-        url  'http://cinchapi.bintray.com/maven'
+  }
+  maven {
+    url "https://dl.cloudsmith.io/public/cinchapi/enterprise-snapshots/maven/"
+    credentials {
+      username = System.getenv('CLOUDSMITH_API_USER')
+      password = System.getenv('CLOUDSMITH_API_KEY')
     }
-    maven {
-        url  'http://cinchapi.bintray.com/maven-snapshots'
-    }
-    maven {
-        url  "http://dl.bintray.com/steppschuh/Markdown-Generator"
-    }
+  }
 }
 
 dependencies {
