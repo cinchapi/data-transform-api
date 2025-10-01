@@ -6,13 +6,6 @@
 ##
 ##############################################################################
 
-# Run initialization if it was not done previously
-INIT_SCRIPT="`dirname $0`"/init.sh
-if [ -x $INIT_SCRIPT ]; then
-    echo "Initializing..."
-    bash $INIT_SCRIPT
-fi
-
 # Attempt to set APP_HOME
 # Resolve links: $0 may be a link
 PRG="$0"
