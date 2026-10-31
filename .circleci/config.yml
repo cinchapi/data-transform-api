@@ -11,6 +11,11 @@ jobs:
       - checkout:
           path: ~/$CIRCLE_PROJECT_REPONAME
       - run:
+          name: Initialize shared build tools
+          command: |
+            cd ~/$CIRCLE_PROJECT_REPONAME
+            bash .circleci/init-agent-skills.sh
+      - run:
           name: Build and Upload
           context: cloudsmith-creds
           command: |
