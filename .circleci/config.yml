@@ -1,8 +1,8 @@
-version: 2
+version: 2.1
 jobs:
   build:
     docker:
-      - image: circleci/openjdk:8-jdk-browsers
+      - image: cimg/openjdk:8.0.322
     environment:
       GRADLE_OPTS: "-Djenkins=true"
       TERM: dumb
@@ -12,7 +12,6 @@ jobs:
           path: ~/$CIRCLE_PROJECT_REPONAME
       - run:
           name: Build and Upload
-          context: cloudsmith-creds
           command: |
             cd ~/$CIRCLE_PROJECT_REPONAME
             ./gradlew clean build publish --refresh-dependencies
@@ -33,3 +32,9 @@ jobs:
             find . -type f -regex ".*/build/libs/.*jar" -exec cp {} ~/artifacts/ \;
       - store_artifacts:
           path: ~/artifacts
+
+workflows:
+  build:
+    jobs:
+      - build:
+          context: cloudsmith-creds
