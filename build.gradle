@@ -16,12 +16,13 @@ plugins {
 ext.concourseVersion = '0.10.5'
 
 dependencies {
-  implementation group: 'com.cinchapi', name: 'accent4j', version: '1.12.0', changing:true
+  implementation platform('com.cinchapi:cinchapi-bom:1.0.0')
+  implementation group: 'com.cinchapi', name: 'accent4j'
   implementation group: 'com.cinchapi', name: 'concourse-driver-java', version: concourseVersion, changing:true // needed for util classes...
   implementation group: 'com.google.code.findbugs', name: 'jsr305', version:'2.0.1'
-  implementation group: 'com.google.guava', name:'guava', version:'25.1-jre'
+  implementation group: 'com.google.guava', name:'guava'
 
-  testImplementation 'junit:junit:4.11'
+  testImplementation 'junit:junit'
 }
 
 ext.generateSourcesJar = true
@@ -65,7 +66,8 @@ repositories {
 def exclusions = [[group : 'com.google.guava', module: 'guava']]
 exclusions.each { exclusion ->
   configurations.implementation.dependencies.all {
-    if (name != exclusion.module || group != exclusion.group) {
+    if ((name != exclusion.module || group != exclusion.group)
+        && (name != 'cinchapi-bom' || group != 'com.cinchapi')) {
       exclude group: exclusion.group, module: exclusion.module
     }
   }
