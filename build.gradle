@@ -16,7 +16,7 @@ plugins {
 ext.concourseVersion = '0.10.5'
 
 dependencies {
-  implementation platform('com.cinchapi:cinchapi-bom:1.0.0')
+  implementation platform('com.cinchapi:cinchapi-bom:1.1.0')
   implementation group: 'com.cinchapi', name: 'accent4j'
   implementation group: 'com.cinchapi', name: 'concourse-driver-java', version: concourseVersion, changing:true // needed for util classes...
   implementation group: 'com.google.code.findbugs', name: 'jsr305', version:'2.0.1'
